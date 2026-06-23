@@ -173,7 +173,7 @@ function X402DiscoverySection({ spec }: { spec: GeoSpec }) {
 
       <AeoChecklist items={discovery.checklist} />
       <FacilitatorDiscoveryTable facilitators={discovery.facilitators} />
-      <X402EndpointCoverageTable endpoints={discovery.endpoints} />
+      <X402EndpointCoverageTable endpoints={discovery.endpoints} note={discovery.endpointsNote} />
       <p style={{ color: "var(--text-mute)", fontSize: 12, margin: "12px 0 0" }}>
         Aggregated from CDP, Dexter, and PayAI discovery registries (snapshot {discovery.snapshotDate}).
       </p>
@@ -322,7 +322,13 @@ function FacilitatorCoverageChip({ label, active }: { label: string; active: boo
   );
 }
 
-function X402EndpointCoverageTable({ endpoints }: { endpoints: AeoDiscoveryEndpoint[] }) {
+function X402EndpointCoverageTable({
+  endpoints,
+  note,
+}: {
+  endpoints: AeoDiscoveryEndpoint[];
+  note?: string;
+}) {
   const rows = [...endpoints].sort(
     (a, b) =>
       (b.l30Calls ?? -1) - (a.l30Calls ?? -1) || (b.qualityScore ?? -1) - (a.qualityScore ?? -1),
@@ -333,7 +339,10 @@ function X402EndpointCoverageTable({ endpoints }: { endpoints: AeoDiscoveryEndpo
       <SectionHeading
         eyebrow="By endpoint"
         title="Per-endpoint coverage"
-        note="Which facilitator registries list each path, with its price and 30-day demand (CDP)."
+        note={
+          note ??
+          "Which facilitator registries list each path, with its price and 30-day demand (CDP)."
+        }
       />
       <article className="card" style={{ padding: 0, overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
