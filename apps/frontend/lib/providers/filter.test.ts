@@ -245,6 +245,26 @@ describe("orderProvidersPinnedFirst", () => {
     ]);
   });
 
+  test("pins Stable Enrich ahead of QuickNode and the rest", () => {
+    const providers: StoredProvider[] = [
+      make({ providerId: "quicknode", name: "QuickNode", serviceId: "quicknode/rpc" }),
+      make({ providerId: "static-api-nansen-ai", name: "Nansen", serviceId: "api.nansen.ai" }),
+      make({
+        providerId: "mpp:stableenrich::tempo:4217::USDC::0x325bdf6f",
+        name: "StableEnrich",
+        serviceId: "merit-systems/stableenrich/enrichment",
+        catalogSource: "pay_sh_curated",
+        transactionCount: 78,
+      }),
+    ];
+
+    expect(orderProvidersPinnedFirst(providers).map((p) => p.providerId)).toEqual([
+      "mpp:stableenrich::tempo:4217::USDC::0x325bdf6f",
+      "quicknode",
+      "static-api-nansen-ai",
+    ]);
+  });
+
   test("uses observed usage for aggregated cards instead of MPP registry rank", () => {
     // brand-key dedup picks a Pay.sh row as winner (so the URL stays stable),
     // but the card represents both Pay.sh + MPP because they were merged.

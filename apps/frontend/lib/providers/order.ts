@@ -1,22 +1,20 @@
 import type { StoredProvider } from "@/lib/types";
 
 // Display priority groups (lower rank = shown first):
-//   0: QuickNode          (current x402 data focus)
-//   1: Nansen             (string match in identity)
-//   2: CoinGecko          (string match in identity)
-//   3: everything else    (sorted by observed usage)
-const TOP_PROVIDER_MARK = "quicknode";
-const PINNED_PROVIDER_MARKS = ["nansen", "coingecko"] as const;
-const PINNED_BASE_RANK = 1;
-const DEFAULT_RANK = PINNED_BASE_RANK + PINNED_PROVIDER_MARKS.length;
+//   0: Stable Enrich      (pinned to the very top)
+//   1: QuickNode          (current x402 data focus)
+//   2: Nansen             (string match in identity)
+//   3: CoinGecko          (string match in identity)
+//   4: everything else    (sorted by observed usage)
+const PINNED_PROVIDER_MARKS = ["stableenrich", "quicknode", "nansen", "coingecko"] as const;
+const DEFAULT_RANK = PINNED_PROVIDER_MARKS.length;
 
 function pinnedProviderRank(provider: StoredProvider): number {
   const identity = `${provider.providerId} ${provider.serviceId ?? ""} ${provider.name} ${
     provider.serviceName ?? ""
   }`.toLowerCase();
-  if (identity.includes(TOP_PROVIDER_MARK)) return 0;
   for (let i = 0; i < PINNED_PROVIDER_MARKS.length; i++) {
-    if (identity.includes(PINNED_PROVIDER_MARKS[i]!)) return PINNED_BASE_RANK + i;
+    if (identity.includes(PINNED_PROVIDER_MARKS[i]!)) return i;
   }
   return DEFAULT_RANK;
 }

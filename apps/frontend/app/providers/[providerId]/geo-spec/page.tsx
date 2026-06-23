@@ -56,13 +56,13 @@ export default async function GeoSpecPage({
     <>
       <TopBar
         providerId={providerId}
-        crumbs={[{ label: "GEO" }]}
+        crumbs={[{ label: "AEO" }]}
         dataMode={pageCtx.dataMode}
         onboarding={{
           id: "geo-spec",
-          title: "Generative Engine Optimization spec",
+          title: "Agentic Engine Optimization spec",
           description:
-            "Show AI agents and humans what this Pay.sh provider does, what it costs, and which paths it serves.",
+            "Show AI agents and humans what this provider does, what it costs, and which paths it serves.",
           metrics: [
             {
               label: "Description",

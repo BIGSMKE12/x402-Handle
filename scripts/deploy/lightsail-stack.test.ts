@@ -143,11 +143,27 @@ describe("lightsail shared stack", () => {
     const compose = read("../../docker-compose.lightsail.yml");
 
     expect(compose).toContain(
-      "BFF_ANALYTICS_POSTGRES_MODE: ${MAIN_BFF_ANALYTICS_POSTGRES_MODE:-${BFF_ANALYTICS_POSTGRES_MODE:-snapshot}}",
+      "BFF_ANALYTICS_POSTGRES_MODE: ${MAIN_BFF_ANALYTICS_POSTGRES_MODE:-snapshot}",
     );
     expect(compose).toContain(
-      "BFF_ANALYTICS_POSTGRES_MODE: ${DEVELOP_BFF_ANALYTICS_POSTGRES_MODE:-${BFF_ANALYTICS_POSTGRES_MODE:-snapshot}}",
+      "BFF_ANALYTICS_POSTGRES_MODE: ${DEVELOP_BFF_ANALYTICS_POSTGRES_MODE:-snapshot}",
     );
+    expect(compose).not.toContain("BFF_ANALYTICS_POSTGRES_MODE:-${BFF_ANALYTICS_POSTGRES_MODE");
+  });
+
+  test("compose bounds BFF containers so analytics OOM cannot hang the host", () => {
+    const compose = read("../../docker-compose.lightsail.yml");
+
+    expect(compose).toContain("x-bff-runtime-limits: &bff-runtime-limits");
+    expect(compose).toContain("  cpus: ${BFF_CPUS:-0.75}");
+    expect(compose).toContain("  mem_limit: ${BFF_MEMORY_LIMIT:-512m}");
+    expect(compose).toContain("  memswap_limit: ${BFF_MEMORY_SWAP_LIMIT:-512m}");
+    expect(compose).toContain("  pids_limit: ${BFF_PIDS_LIMIT:-256}");
+    expect(compose).toContain("  oom_kill_disable: false");
+    expect(compose).toContain("  oom_score_adj: ${BFF_OOM_SCORE_ADJ:-500}");
+    expect(compose).toContain("  init: true");
+    expect(compose).toContain("x-main-bff: &main-bff\n  <<: *bff-runtime-limits");
+    expect(compose).toContain("x-develop-bff: &develop-bff\n  <<: *bff-runtime-limits");
   });
 
   test("compose lets both branches share the common MPPX payer key", () => {
