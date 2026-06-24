@@ -155,9 +155,9 @@ describe("lightsail shared stack", () => {
     const compose = read("../../docker-compose.lightsail.yml");
 
     expect(compose).toContain("x-bff-runtime-limits: &bff-runtime-limits");
-    expect(compose).toContain("  cpus: ${BFF_CPUS:-0.75}");
-    expect(compose).toContain("  mem_limit: ${BFF_MEMORY_LIMIT:-512m}");
-    expect(compose).toContain("  memswap_limit: ${BFF_MEMORY_SWAP_LIMIT:-512m}");
+    expect(compose).toContain("  cpus: ${BFF_CPUS:-1.5}");
+    expect(compose).toContain("  mem_limit: ${BFF_MEMORY_LIMIT:-1500m}");
+    expect(compose).toContain("  memswap_limit: ${BFF_MEMORY_SWAP_LIMIT:-2g}");
     expect(compose).toContain("  pids_limit: ${BFF_PIDS_LIMIT:-256}");
     expect(compose).toContain("  oom_kill_disable: false");
     expect(compose).toContain("  oom_score_adj: ${BFF_OOM_SCORE_ADJ:-500}");
@@ -253,6 +253,93 @@ describe("lightsail shared stack", () => {
     );
     expect(syncScript).toContain(
       'print_optional_env_var DEVELOP_MPP_SECRET_KEY "${DEVELOP_MPP_SECRET_KEY:-}"',
+    );
+  });
+
+  test("deployment auto-generates the x402 refresh token and passes it to stack sync", () => {
+    const workflow = read("../../.github/workflows/deploy-lightsail-shared.yml");
+
+    expect(workflow).toContain("- name: Generate x402 discovery refresh token");
+    expect(workflow).toContain(
+      'printf \'BFF_X402_REFRESH_TOKEN=%s\\n\' "$(openssl rand -hex 32)" >> "$GITHUB_ENV"',
+    );
+    expect(workflow).toContain('bff_x402_refresh_token_b64="$(encode_env BFF_X402_REFRESH_TOKEN)"');
+    expect(workflow).toContain('BFF_X402_REFRESH_TOKEN_B64="${bff_x402_refresh_token_b64}"');
+    expect(workflow).toContain(
+      'BFF_X402_REFRESH_BASE_URL="${{ secrets.BFF_X402_REFRESH_BASE_URL }}"',
+    );
+    expect(workflow).toContain("decode_env BFF_X402_REFRESH_TOKEN_B64 BFF_X402_REFRESH_TOKEN");
+    expect(workflow).toContain("export BFF_X402_REFRESH_TOKEN");
+    expect(workflow).toContain("export BFF_X402_REFRESH_BASE_URL");
+  });
+
+  test("compose resolves the x402 refresh token per branch", () => {
+    const compose = read("../../docker-compose.lightsail.yml");
+
+    expect(compose).toContain(
+      "BFF_X402_REFRESH_TOKEN: ${MAIN_BFF_X402_REFRESH_TOKEN:-${BFF_X402_REFRESH_TOKEN:-}}",
+    );
+    expect(compose).toContain(
+      "BFF_X402_REFRESH_TOKEN: ${DEVELOP_BFF_X402_REFRESH_TOKEN:-${BFF_X402_REFRESH_TOKEN:-}}",
+    );
+  });
+
+  test("deployment sync persists per-branch x402 tokens without clobbering the other branch", () => {
+    const syncScript = read("./lightsail-sync-stack.sh");
+
+    expect(syncScript).toContain("resolve_x402_refresh_token() {");
+    expect(syncScript).toContain("read_persisted_x402_refresh_token() {");
+    expect(syncScript).toContain("generate_x402_refresh_token() {");
+    expect(syncScript).toContain("openssl rand -hex 32");
+    expect(syncScript).toContain('token_file="${secrets_dir}/x402-refresh-token"');
+    expect(syncScript).toContain('chmod 600 "$token_file"');
+    expect(syncScript).toContain(
+      'main_x402_refresh_token="$(resolve_x402_refresh_token main "${BFF_X402_REFRESH_TOKEN:-}")"',
+    );
+    expect(syncScript).toContain(
+      'develop_x402_refresh_token="$(read_persisted_x402_refresh_token develop)"',
+    );
+    expect(syncScript).toContain(
+      'develop_x402_refresh_token="$(resolve_x402_refresh_token develop "${BFF_X402_REFRESH_TOKEN:-}")"',
+    );
+    expect(syncScript).toContain(
+      'main_x402_refresh_token="$(read_persisted_x402_refresh_token main)"',
+    );
+    expect(syncScript).toContain(
+      'print_optional_env_var MAIN_BFF_X402_REFRESH_TOKEN "$main_x402_refresh_token"',
+    );
+    expect(syncScript).toContain(
+      'print_optional_env_var DEVELOP_BFF_X402_REFRESH_TOKEN "$develop_x402_refresh_token"',
+    );
+  });
+
+  test("deployment sync provisions an external cron that refreshes x402 twice a day", () => {
+    const syncScript = read("./lightsail-sync-stack.sh");
+
+    expect(syncScript).toContain("provision_x402_refresh_cron() {");
+    expect(syncScript).toContain("install_x402_refresh_crontab() {");
+    expect(syncScript).toContain(
+      'x402_refresh_base_url="${BFF_X402_REFRESH_BASE_URL:-https://api.flovia402.com}"',
+    );
+    expect(syncScript).toContain(
+      'refresh_url="${x402_refresh_base_url%/}/${branch}/aeo/x402/refresh"',
+    );
+    expect(syncScript).toContain('install -m 700 scripts/deploy/x402-refresh.sh "$script_path"');
+    expect(syncScript).toContain('local env_path="${secrets_dir}/x402-refresh.env"');
+    expect(syncScript).toContain("printf 'BFF_X402_REFRESH_URL=%s\\n' \"$refresh_url\"");
+    expect(syncScript).toContain("printf 'BFF_X402_REFRESH_TOKEN=%s\\n' \"$token\"");
+    expect(syncScript).toContain('chmod 600 "$env_path"');
+    expect(syncScript).toContain('local begin_marker="# BEGIN flovia x402-refresh ${branch}"');
+    expect(syncScript).toContain("printf 'CRON_TZ=UTC\\n'");
+    expect(syncScript).toContain(
+      'printf \'0 2 * * * /usr/bin/env bash %s %s >> %s 2>&1\\n\' "$script_path" "$env_path" "$log_path"',
+    );
+    expect(syncScript).toContain(
+      'printf \'0 14 * * * /usr/bin/env bash %s %s >> %s 2>&1\\n\' "$script_path" "$env_path" "$log_path"',
+    );
+    expect(syncScript).toContain('provision_x402_refresh_cron main "$main_x402_refresh_token"');
+    expect(syncScript).toContain(
+      'provision_x402_refresh_cron develop "$develop_x402_refresh_token"',
     );
   });
 });

@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { normalizePaymentRecipientAddress } from "contracts";
 import {
   type BffAnalyticsDataSource,
@@ -6,21 +7,30 @@ import {
 } from "./data/analytics-source";
 import { BffLlmUnavailableError, type BffLlmService, resolveBffLlmService } from "./data/llm";
 import { buildWorkflowIntentInputFromProfile, toWorkflowIntentInput } from "./data/workflow-intent";
+import { type X402DiscoveryStore, createX402DiscoveryStore } from "./data/x402-discovery/store";
 import {
   json,
   analyticsLoading,
   analyticsUnavailable,
+  badRequest,
   cachedJson,
+  forbidden,
   llmFailed,
   llmUnavailable,
   methodNotAllowed,
   notFound,
+  unauthorized,
   workflowIntentFailed,
   workflowIntentNoCandidateSessions,
   workflowIntentReady,
   workflowIntentUnavailable,
 } from "./http/responses";
-import { matchCustomerRoute, normalizePath, readonlyRoutes } from "./http/routes";
+import {
+  AEO_X402_REFRESH_PATH,
+  matchCustomerRoute,
+  normalizePath,
+  readonlyRoutes,
+} from "./http/routes";
 import { handleShowcaseRoute, showcaseRoutes } from "./showcase";
 
 type RequestTimeoutController = {
@@ -97,6 +107,7 @@ export const createBffHandler = (
   dataSource: BffAnalyticsDataSource | Promise<BffAnalyticsDataSource> | undefined = undefined,
   llmService: BffLlmService | null = resolveBffLlmService(),
   runtimeMetadata: BffRuntimeMetadata = resolveBffRuntimeMetadata(),
+  x402Store: X402DiscoveryStore = createX402DiscoveryStore(),
 ) => {
   let analyticsState: AnalyticsLoadState;
 
@@ -165,12 +176,63 @@ export const createBffHandler = (
     return body;
   };
 
+  const extractRefreshToken = (request: Request): string | null => {
+    const auth = request.headers.get("authorization");
+    if (auth?.toLowerCase().startsWith("bearer ")) {
+      const token = auth.slice(7).trim();
+      if (token) return token;
+    }
+    const headerToken = request.headers.get("x-refresh-token")?.trim();
+    return headerToken && headerToken.length > 0 ? headerToken : null;
+  };
+
+  const tokensMatch = (provided: string, expected: string): boolean => {
+    const a = Buffer.from(provided);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length) return false;
+    return timingSafeEqual(a, b);
+  };
+
+  const handleAeoRefresh = async (
+    request: Request,
+    server?: RequestTimeoutController,
+  ): Promise<Response> => {
+    const expected = process.env.BFF_X402_REFRESH_TOKEN?.trim();
+    if (!expected) {
+      return forbidden(
+        "x402 discovery refresh is disabled (set BFF_X402_REFRESH_TOKEN to enable).",
+      );
+    }
+    const provided = extractRefreshToken(request);
+    if (!provided || !tokensMatch(provided, expected)) {
+      return unauthorized("Invalid x402 discovery refresh token.");
+    }
+    try {
+      // A full live refresh paginates thousands of resources; disable the idle timeout.
+      server?.timeout(request, 0);
+      const status = await x402Store.refresh();
+      return json({ status: "ok", ...status });
+    } catch (error) {
+      return json(
+        {
+          error: "x402_refresh_failed",
+          message: error instanceof Error ? error.message : String(error),
+        },
+        { status: 502 },
+      );
+    }
+  };
+
   return async (request: Request, server?: RequestTimeoutController) => {
     const url = new URL(request.url);
     const path = normalizePath(url);
     const customerRoute = matchCustomerRoute(path);
 
     if (request.method !== "GET") {
+      if (request.method === "POST" && path === AEO_X402_REFRESH_PATH) {
+        return handleAeoRefresh(request, server);
+      }
+
       if (
         request.method === "POST" &&
         (path === "/showcase/stripe-mpp/pay" || path === "/showcase/solana-mpp/pay")
@@ -223,6 +285,22 @@ export const createBffHandler = (
           service: "flovia-bff",
           ...analyticsStatusBody(),
         });
+      case "/aeo/x402": {
+        // Independent of the analytics read model — served from the discovery store.
+        // `service` may be a comma-separated list of candidate hosts; the first
+        // host with discovery data wins (providers may not publish a serviceUrl,
+        // so the frontend also passes observed/MPP endpoint hosts).
+        const hosts = (url.searchParams.get("service") ?? "")
+          .split(",")
+          .map((value) => value.trim())
+          .filter(Boolean);
+        if (hosts.length === 0) return badRequest("Query parameter 'service' is required.");
+        for (const host of hosts) {
+          const aggregate = x402Store.getAggregate(host);
+          if (aggregate) return cachedJson(aggregate);
+        }
+        return notFound(path);
+      }
       default:
         break;
     }

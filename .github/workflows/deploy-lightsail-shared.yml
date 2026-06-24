@@ -9,6 +9,13 @@ name: deploy-lightsail-shared
 # - BFF_BEDROCK_REGION
 # - BFF_BEDROCK_MODEL_ID
 # - BFF_BEDROCK_PROMPT_VERSION
+#
+# x402 discovery refresh:
+# - The bearer token (BFF_X402_REFRESH_TOKEN) is auto-generated per deploy here,
+#   handed to the deployed branch's BFF env, and embedded in a host cron that
+#   POSTs /aeo/x402/refresh twice a day (see scripts/deploy/x402-refresh.sh).
+# - Optional repository secret BFF_X402_REFRESH_BASE_URL overrides the public
+#   base URL the cron targets (default https://api.flovia402.com).
 
 # Optional repository secrets for live analytics:
 # - MAIN_BFF_ANALYTICS_DATABASE_URL
@@ -110,6 +117,11 @@ jobs:
             echo "BFF_IMAGE_REPOSITORY=ghcr.io/${image_namespace}/flovia-poc-bff"
             echo "DEPLOY_GIT_SHA=${deploy_git_sha}"
           } >> "$GITHUB_ENV"
+
+      - name: Generate x402 discovery refresh token
+        run: |
+          set -euo pipefail
+          printf 'BFF_X402_REFRESH_TOKEN=%s\n' "$(openssl rand -hex 32)" >> "$GITHUB_ENV"
 
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v3
@@ -218,6 +230,7 @@ jobs:
             fi
           }
 
+          bff_x402_refresh_token_b64="$(encode_env BFF_X402_REFRESH_TOKEN)"
           main_bff_analytics_database_url_b64="$(encode_env MAIN_BFF_ANALYTICS_DATABASE_URL)"
           develop_bff_analytics_database_url_b64="$(encode_env DEVELOP_BFF_ANALYTICS_DATABASE_URL)"
           bff_analytics_database_url_b64="$(encode_env BFF_ANALYTICS_DATABASE_URL)"
@@ -269,6 +282,8 @@ jobs:
             DEPLOY_BRANCH="${DEPLOY_BRANCH}" \
             DEPLOY_GIT_SHA="${DEPLOY_GIT_SHA}" \
             BFF_IMAGE_REPOSITORY="${BFF_IMAGE_REPOSITORY}" \
+            BFF_X402_REFRESH_TOKEN_B64="${bff_x402_refresh_token_b64}" \
+            BFF_X402_REFRESH_BASE_URL="${{ secrets.BFF_X402_REFRESH_BASE_URL }}" \
             AWS_BEARER_TOKEN_BEDROCK="${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}" \
             BFF_BEDROCK_REGION="${{ secrets.BFF_BEDROCK_REGION }}" \
             BFF_BEDROCK_MODEL_ID="${{ secrets.BFF_BEDROCK_MODEL_ID }}" \
@@ -326,6 +341,7 @@ jobs:
             unset "$target_key"
           }
 
+          decode_env BFF_X402_REFRESH_TOKEN_B64 BFF_X402_REFRESH_TOKEN
           decode_env MAIN_BFF_ANALYTICS_DATABASE_URL_B64 MAIN_BFF_ANALYTICS_DATABASE_URL
           decode_env DEVELOP_BFF_ANALYTICS_DATABASE_URL_B64 DEVELOP_BFF_ANALYTICS_DATABASE_URL
           decode_env BFF_ANALYTICS_DATABASE_URL_B64 BFF_ANALYTICS_DATABASE_URL
@@ -400,6 +416,8 @@ jobs:
           export BFF_IMAGE_REPOSITORY
           export GHCR_USERNAME
           export GHCR_TOKEN
+          export BFF_X402_REFRESH_TOKEN
+          export BFF_X402_REFRESH_BASE_URL
 
           cd "$deploy_path"
           bash ./scripts/deploy/lightsail-sync-stack.sh

@@ -1,8 +1,10 @@
 import {
+  type AeoDiscovery,
   type PhaseBCustomerProfileResponse,
   type RouteAnalyticsSankeyResponse,
   type RouteAnalyticsSummaryResponse,
   type WalletUsageGraphResponse,
+  validateAeoDiscoveryResponse,
   validatePhaseBCustomerListResponse,
   validatePhaseBCustomerUpsellExplanationResponse,
   validatePhaseBCustomerProfileResponse,
@@ -112,6 +114,33 @@ export async function getProviders(): Promise<ProviderCatalogItemDto[]> {
   return adaptProviderCatalog(
     validateProviderCatalogResponse(await bffFetch<unknown>("/providers")),
   );
+}
+
+// Aggregated x402 facilitator discovery for the AEO page. `services` is one or
+// more candidate hosts (a provider may not publish a serviceUrl, so the caller
+// also passes observed/MPP endpoint hosts); the BFF returns the first match.
+export async function getAeoX402Discovery(
+  services: string | string[],
+): Promise<AeoDiscovery | null> {
+  const candidates = (Array.isArray(services) ? services : [services])
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (candidates.length === 0) return null;
+
+  const response = await fetch(
+    `${bffBaseUrl()}/aeo/x402?service=${encodeURIComponent(candidates.join(","))}`,
+    {
+      next: { revalidate: SNAPSHOT_REVALIDATE_SECONDS },
+      headers: { accept: "application/json" },
+    },
+  );
+
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error(`Data request failed: ${response.status} ${response.statusText} (/aeo/x402)`);
+  }
+
+  return validateAeoDiscoveryResponse(await response.json());
 }
 
 export type GetCustomersFilter = { payTo?: string; serviceId?: string };

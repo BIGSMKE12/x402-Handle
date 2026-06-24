@@ -5,12 +5,16 @@ export const readonlyRoutes = new Set([
   "/providers",
   "/customers",
   "/wallet-usage-graph",
+  "/aeo/x402",
   "/analytics/services/coingecko/summary",
   "/analytics/services/comparison",
   "/analytics/services/quadrants",
   "/analytics/routes/summary",
   "/analytics/routes/sankey",
 ]);
+
+// Authorized POST endpoint that triggers a live x402 discovery refresh.
+export const AEO_X402_REFRESH_PATH = "/aeo/x402/refresh";
 
 export type CustomerRouteKind =
   | "profile"

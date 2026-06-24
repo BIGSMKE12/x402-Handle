@@ -2,7 +2,6 @@ import {
   type AeoDiscovery,
   type AeoDiscoveryEndpoint,
   type FacilitatorDiscoveryRow,
-  getAeoDiscovery,
   getAeoPayShText,
 } from "@/lib/geo-spec/discovery";
 import { formatAtomic, shortAddr } from "@/lib/format";
@@ -11,9 +10,10 @@ import type { GeoSpec, MppRegistryEndpoint } from "@/lib/geo-spec/source";
 type Props = {
   providerId: string;
   spec: GeoSpec | null;
+  discovery: AeoDiscovery | null;
 };
 
-export function GeoSpecScreen({ providerId, spec }: Props) {
+export function GeoSpecScreen({ providerId, spec, discovery }: Props) {
   return (
     <div style={{ background: "var(--bg-shell)", minHeight: "100%" }}>
       <div style={{ padding: "32px 40px 80px", maxWidth: 1200, margin: "0 auto" }}>
@@ -34,7 +34,7 @@ export function GeoSpecScreen({ providerId, spec }: Props) {
         ) : (
           <>
             <ProviderDetailsSection spec={spec} />
-            <X402DiscoverySection spec={spec} />
+            <X402DiscoverySection discovery={discovery} />
             <MppOfficialRegistrySection spec={spec} />
             <PayShSection spec={spec} />
           </>
@@ -140,8 +140,7 @@ function ProviderDetailsSection({ spec }: { spec: GeoSpec }) {
   );
 }
 
-function X402DiscoverySection({ spec }: { spec: GeoSpec }) {
-  const discovery = getAeoDiscovery(spec);
+function X402DiscoverySection({ discovery }: { discovery: AeoDiscovery | null }) {
   if (!discovery) return null;
 
   return (
@@ -152,7 +151,7 @@ function X402DiscoverySection({ spec }: { spec: GeoSpec }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
           gap: 12,
           marginBottom: 24,
         }}
@@ -163,7 +162,6 @@ function X402DiscoverySection({ spec }: { spec: GeoSpec }) {
           mono
         />
         <MetaTile label="Endpoints (unique)" value={String(discovery.totalEndpoints)} mono />
-        <MetaTile label="30-day calls" value={discovery.l30Calls.toLocaleString()} mono />
         <MetaTile
           label="Verification pass"
           value={`${Math.round(discovery.verificationPassRate * 100)}%`}
@@ -225,14 +223,12 @@ function AeoChecklist({ items }: { items: AeoDiscovery["checklist"] }) {
   );
 }
 
-function facilitatorQualityDemand(row: FacilitatorDiscoveryRow): string {
-  if (row.l30Calls !== undefined) {
-    return `${row.l30Calls.toLocaleString()} calls · ${row.uniquePayers ?? 0} payers`;
-  }
+function facilitatorQuality(row: FacilitatorDiscoveryRow): string {
   if (row.verificationTotal) {
     const quality = row.avgQualityScore !== undefined ? ` · q${row.avgQualityScore.toFixed(1)}` : "";
     return `verified ${row.verificationPass ?? 0}/${row.verificationTotal}${quality}`;
   }
+  if (row.avgQualityScore !== undefined) return `q${row.avgQualityScore.toFixed(1)}`;
   return "—";
 }
 
@@ -253,7 +249,7 @@ function FacilitatorDiscoveryTable({
               <th style={thStyle}>Networks</th>
               <th style={thStyle}>Scheme</th>
               <th style={thStyle}>Price (USD)</th>
-              <th style={thStyle}>Quality / demand</th>
+              <th style={thStyle}>Quality</th>
               <th style={thStyle}>Updated</th>
             </tr>
           </thead>
@@ -274,7 +270,7 @@ function FacilitatorDiscoveryTable({
                         : `$${formatPrice(row.priceUsd.min)} – $${formatPrice(row.priceUsd.max)}`
                       : "—"}
                   </td>
-                  <td style={tdStyle}>{facilitatorQualityDemand(row)}</td>
+                  <td style={tdStyle}>{facilitatorQuality(row)}</td>
                   <td style={tdStyle} className="mono">
                     {row.lastUpdated ?? "—"}
                   </td>
@@ -329,10 +325,7 @@ function X402EndpointCoverageTable({
   endpoints: AeoDiscoveryEndpoint[];
   note?: string;
 }) {
-  const rows = [...endpoints].sort(
-    (a, b) =>
-      (b.l30Calls ?? -1) - (a.l30Calls ?? -1) || (b.qualityScore ?? -1) - (a.qualityScore ?? -1),
-  );
+  const rows = [...endpoints].sort((a, b) => (b.qualityScore ?? -1) - (a.qualityScore ?? -1));
 
   return (
     <section style={{ marginTop: 24 }}>
@@ -341,7 +334,7 @@ function X402EndpointCoverageTable({
         title="Per-endpoint coverage"
         note={
           note ??
-          "Which facilitator registries list each path, with its price and 30-day demand (CDP)."
+          "Which facilitator registries list each path, with its price and Dexter quality score."
         }
       />
       <article className="card" style={{ padding: 0, overflow: "hidden" }}>
@@ -352,7 +345,6 @@ function X402EndpointCoverageTable({
               <th style={thStyle}>Facilitators</th>
               <th style={thStyle}>Networks</th>
               <th style={{ ...thStyle, textAlign: "right" }}>Price (USD)</th>
-              <th style={{ ...thStyle, textAlign: "right" }}>30-day calls (CDP)</th>
             </tr>
           </thead>
           <tbody>
@@ -372,9 +364,6 @@ function X402EndpointCoverageTable({
                 <td style={tdStyle}>{endpoint.networks.join(", ")}</td>
                 <td className="mono" style={{ ...tdStyle, textAlign: "right" }}>
                   ${formatPrice(endpoint.priceUsd)}
-                </td>
-                <td className="mono" style={{ ...tdStyle, textAlign: "right" }}>
-                  {endpoint.l30Calls !== undefined ? endpoint.l30Calls.toLocaleString() : "—"}
                 </td>
               </tr>
             ))}

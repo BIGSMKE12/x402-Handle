@@ -1,6 +1,14 @@
 import { describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
+// Stub only the Next runtime modules (no Next server/router under `bun test`) and
+// @/app/providers (its `useProviders` hook throws without a context provider). The
+// other app modules (Icon, brand, sdk-fixtures, …) render fine with their real
+// implementations and are intentionally NOT mocked: bun's mock.module() is
+// process-global and persists, so stubbing real app modules here would leak into
+// every other test file that imports them. The @/app/providers stub deliberately
+// includes ALL of the module's real exports so importers of the other exports are
+// not broken by the leak.
 mock.module("next/image", () => ({
   default: ({
     alt,
@@ -27,47 +35,14 @@ mock.module("next/navigation", () => ({
 }));
 
 mock.module("@/app/providers", () => ({
+  ProvidersContextProvider: ({ children }: { children: React.ReactNode }) => children,
   useProviders: () => ({
     stored: [],
     userProviders: [],
     hydrated: true,
     demoOpted: false,
   }),
-}));
-
-mock.module("@/components/ui/Icon", () => ({
-  Icon: {
-    provider: () => <span>provider</span>,
-    customers: () => <span>customers</span>,
-    bolt: () => <span>bolt</span>,
-    spark: () => <span>spark</span>,
-    geo: () => <span>geo</span>,
-    external: () => <span>external</span>,
-  },
-}));
-
-mock.module("@/components/shell/ProviderAvatar", () => ({
-  ProviderAvatar: () => <span>avatar</span>,
-}));
-
-mock.module("@/lib/pay-sh/brand", () => ({
-  inferBrandDisplayName: () => undefined,
-  inferBrandDomain: () => ({ domain: undefined, iconUrl: undefined }),
-}));
-
-mock.module("@/lib/pay-sh/skills", () => ({
-  resolvePaySkill: () => undefined,
-  usePaySkills: () => [],
-}));
-
-mock.module("@/lib/providers", () => ({
-  findProviderByRouteId: () => undefined,
-  isDemoProvider: () => false,
-}));
-
-mock.module("@/lib/sdk-fixtures/shared", () => ({
-  SDK_DEMO_PROVIDER_ID: "sdk-demo",
-  SDK_DEMO_PROVIDER_NAME: "Northwind Price API",
+  useActiveProvider: () => ({ active: undefined, hydrated: true }),
 }));
 
 describe("Sidebar", () => {
