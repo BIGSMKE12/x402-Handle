@@ -31,6 +31,50 @@ write_branch_analytics_env() {
   fi
 }
 
+generate_x402_refresh_token() {
+  if command -v openssl >/dev/null 2>&1; then
+    openssl rand -hex 32
+  else
+    head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n'
+  fi
+}
+
+read_persisted_x402_refresh_token() {
+  local branch="$1"
+  local token_file="${apps_root}/${branch}/secrets/x402-refresh-token"
+
+  if [ -f "$token_file" ]; then
+    cat "$token_file"
+  fi
+}
+
+# Resolve (and persist) the x402 refresh token for a branch.
+# Priority: the value passed from the deploy (freshly generated) -> a previously
+# persisted token -> a newly generated one. The result is persisted to the branch
+# secrets file (chmod 600) and echoed to stdout.
+resolve_x402_refresh_token() {
+  local branch="$1"
+  local provided="$2"
+  local secrets_dir="${apps_root}/${branch}/secrets"
+  local token_file="${secrets_dir}/x402-refresh-token"
+  local token=""
+
+  if [ -n "$provided" ]; then
+    token="$provided"
+  elif [ -f "$token_file" ]; then
+    token="$(cat "$token_file")"
+  else
+    token="$(generate_x402_refresh_token)"
+  fi
+
+  mkdir -p "$secrets_dir"
+  chmod 700 "$secrets_dir"
+  printf '%s' "$token" > "$token_file"
+  chmod 600 "$token_file"
+
+  printf '%s' "$token"
+}
+
 require_env DEPLOY_BRANCH
 require_env DEPLOY_GIT_SHA
 require_env BFF_IMAGE_REPOSITORY
@@ -53,6 +97,8 @@ stack_caddy_dir="${stack_root}/deploy/caddy"
 stack_caddy_config="${stack_caddy_dir}/Caddyfile"
 main_data_dir="${apps_root}/main/data"
 develop_data_dir="${apps_root}/develop/data"
+# Public base URL the external x402 refresh cron POSTs to (Caddy strips /<branch>).
+x402_refresh_base_url="${BFF_X402_REFRESH_BASE_URL:-https://api.flovia402.com}"
 main_blue_container="flovia-lightsail-main-bff-blue-1"
 main_green_container="flovia-lightsail-main-bff-green-1"
 develop_blue_container="flovia-lightsail-develop-bff-blue-1"
@@ -134,6 +180,18 @@ else
   main_image_tag="${main_image_tag:-main}"
 fi
 
+# x402 discovery refresh token: the deployed branch gets the freshly generated
+# token (passed from the deploy) persisted to disk; the other branch keeps its
+# previously persisted token so a single-branch deploy never breaks the other
+# branch's cron.
+if [ "$DEPLOY_BRANCH" = "main" ]; then
+  main_x402_refresh_token="$(resolve_x402_refresh_token main "${BFF_X402_REFRESH_TOKEN:-}")"
+  develop_x402_refresh_token="$(read_persisted_x402_refresh_token develop)"
+else
+  develop_x402_refresh_token="$(resolve_x402_refresh_token develop "${BFF_X402_REFRESH_TOKEN:-}")"
+  main_x402_refresh_token="$(read_persisted_x402_refresh_token main)"
+fi
+
 main_analytics_url="${MAIN_BFF_ANALYTICS_DATABASE_URL:-${BFF_ANALYTICS_DATABASE_URL:-}}"
 develop_analytics_url="${DEVELOP_BFF_ANALYTICS_DATABASE_URL:-${BFF_ANALYTICS_DATABASE_URL:-}}"
 bedrock_region="${BFF_BEDROCK_REGION:-${AWS_REGION:-${AWS_DEFAULT_REGION:-}}}"
@@ -167,6 +225,9 @@ bedrock_region="${BFF_BEDROCK_REGION:-${AWS_REGION:-${AWS_DEFAULT_REGION:-}}}"
   write_branch_analytics_env DEVELOP "$develop_analytics_url"
   print_optional_env_var DEVELOP_BFF_ANALYTICS_READ_MODEL_PATH "${DEVELOP_BFF_ANALYTICS_READ_MODEL_PATH:-}"
   print_optional_env_var DEVELOP_BFF_ANALYTICS_SNAPSHOT_ID "${DEVELOP_BFF_ANALYTICS_SNAPSHOT_ID:-}"
+
+  print_optional_env_var MAIN_BFF_X402_REFRESH_TOKEN "$main_x402_refresh_token"
+  print_optional_env_var DEVELOP_BFF_X402_REFRESH_TOKEN "$develop_x402_refresh_token"
 
   print_optional_env_var HITPAY_API_KEY "${HITPAY_API_KEY:-}"
   print_optional_env_var HITPAY_WEBHOOK_SALT "${HITPAY_WEBHOOK_SALT:-}"
@@ -338,10 +399,89 @@ blue_green_deploy() {
   fi
 }
 
+# Replace the managed crontab block for a branch (idempotent via begin/end
+# markers) so the x402 refresh runs twice a day (02:00 and 14:00 UTC). Any
+# other crontab entries the host owner added are preserved.
+install_x402_refresh_crontab() {
+  local branch="$1"
+  local script_path="$2"
+  local env_path="$3"
+  local log_path="$4"
+
+  if ! command -v crontab >/dev/null 2>&1; then
+    echo "crontab not available; skipping x402 refresh schedule for ${branch}." >&2
+    echo "Provisioned ${script_path} + ${env_path}; register a scheduler manually." >&2
+    return 0
+  fi
+
+  local begin_marker="# BEGIN flovia x402-refresh ${branch}"
+  local end_marker="# END flovia x402-refresh ${branch}"
+  local existing filtered
+
+  existing="$(crontab -l 2>/dev/null || true)"
+
+  # Drop any previous managed block for this branch, keeping everything else.
+  # Command substitution strips trailing newlines, so an all-blank result (no
+  # prior crontab) collapses to empty and is skipped below.
+  filtered="$(printf '%s\n' "$existing" | awk -v b="$begin_marker" -v e="$end_marker" '
+    $0 == b { skip = 1; next }
+    $0 == e { skip = 0; next }
+    skip != 1 { print }
+  ')"
+
+  {
+    if [ -n "$filtered" ]; then
+      printf '%s\n' "$filtered"
+    fi
+    printf '%s\n' "$begin_marker"
+    printf 'CRON_TZ=UTC\n'
+    printf '0 2 * * * /usr/bin/env bash %s %s >> %s 2>&1\n' "$script_path" "$env_path" "$log_path"
+    printf '0 14 * * * /usr/bin/env bash %s %s >> %s 2>&1\n' "$script_path" "$env_path" "$log_path"
+    printf '%s\n' "$end_marker"
+  } | crontab -
+}
+
+# Install the committed cron runner + a 600 env file holding the freshly
+# generated token and the branch's public refresh URL, then schedule it. Runs
+# outside docker compose, on the host, so the in-memory store is refreshed via
+# the same HTTP endpoint an external caller would use.
+provision_x402_refresh_cron() {
+  local branch="$1"
+  local token="$2"
+  local branch_root="${apps_root}/${branch}"
+  local bin_dir="${branch_root}/bin"
+  local secrets_dir="${branch_root}/secrets"
+  local reports_dir="${branch_root}/data/reports"
+  local script_path="${bin_dir}/x402-refresh.sh"
+  local env_path="${secrets_dir}/x402-refresh.env"
+  local log_path="${reports_dir}/x402-refresh.log"
+  local refresh_url="${x402_refresh_base_url%/}/${branch}/aeo/x402/refresh"
+
+  if [ -z "$token" ]; then
+    echo "Skipping x402 refresh cron for ${branch}: no refresh token resolved." >&2
+    return 0
+  fi
+
+  mkdir -p "$bin_dir" "$secrets_dir" "$reports_dir"
+  chmod 700 "$secrets_dir"
+
+  install -m 700 scripts/deploy/x402-refresh.sh "$script_path"
+
+  {
+    printf 'BFF_X402_REFRESH_URL=%s\n' "$refresh_url"
+    printf 'BFF_X402_REFRESH_TOKEN=%s\n' "$token"
+  } > "$env_path"
+  chmod 600 "$env_path"
+
+  install_x402_refresh_crontab "$branch" "$script_path" "$env_path" "$log_path"
+}
+
 if [ "$DEPLOY_BRANCH" = "main" ]; then
   blue_green_deploy main "$detected_active_main_slot" main-bff "" "$active_develop_slot"
+  provision_x402_refresh_cron main "$main_x402_refresh_token"
 else
   blue_green_deploy develop "$detected_active_develop_slot" develop-bff "$active_main_slot" ""
+  provision_x402_refresh_cron develop "$develop_x402_refresh_token"
 fi
 
 docker logout ghcr.io >/dev/null 2>&1 || true

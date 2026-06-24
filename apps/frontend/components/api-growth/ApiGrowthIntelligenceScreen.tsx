@@ -1,6 +1,8 @@
 import type { CSSProperties, ReactNode } from "react";
+import { BubbleMatrix } from "@/components/api-growth/BubbleMatrix";
 import { EndpointSankey, type EndpointSankeyFlow } from "@/components/macro-metrics/EndpointSankey";
 import { MacroRouteSankeySection } from "@/components/macro-metrics/MacroRouteSankeySection";
+import { builderCodeFor } from "@/lib/api-growth/sources";
 import { formatAtomic, formatRatioPct } from "@/lib/format";
 import type {
   ApiGrowthServiceCandidate,
@@ -19,7 +21,7 @@ type Props = {
 export function ApiGrowthIntelligenceScreen({ intelligence }: Props) {
   return (
     <div style={{ background: "var(--bg-shell)", minHeight: "100%" }}>
-      <div style={{ padding: "32px 40px 80px", maxWidth: 1680, margin: "0 auto" }}>
+      <div style={{ padding: "32px 40px 80px", width: "100%" }}>
         <header style={{ marginBottom: 22 }}>
           <div className="eyebrow" style={{ marginBottom: 8 }}>
             Growth intelligence · API adoption
@@ -34,7 +36,7 @@ export function ApiGrowthIntelligenceScreen({ intelligence }: Props) {
 
         <InsightGrid cards={intelligence.insightCards} />
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 600px), 1fr))", gap: 14, alignItems: "start" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14, alignItems: "stretch" }}>
           <SectionCard eyebrow="Source / Medium Adoption">
             <BubbleMatrix rows={intelligence.sourceMediumQuality.rows} />
           </SectionCard>
@@ -63,11 +65,9 @@ export function ApiGrowthIntelligenceScreen({ intelligence }: Props) {
           <div className="eyebrow" style={{ marginBottom: 8 }}>
             Growth Action Bridge
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 600px), 1fr))", gap: 14, alignItems: "start" }}>
-            <SectionCard eyebrow="Inbound API cohorts">
-              <InboundApiCohort cohorts={intelligence.inboundApiCohorts} />
-            </SectionCard>
-          </div>
+          <SectionCard eyebrow="Inbound API cohorts">
+            <InboundApiCohort cohorts={intelligence.inboundApiCohorts} />
+          </SectionCard>
           <p style={{ color: "var(--text-mute)", fontSize: 12, margin: "12px 0 0" }}>{intelligence.proxyNote}</p>
         </section>
       </div>
@@ -105,6 +105,31 @@ function DemoBadge() {
   );
 }
 
+function BuilderCodeChip({ code }: { code: string }) {
+  return (
+    <span
+      className="mono"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 3,
+        fontSize: 10,
+        fontWeight: 700,
+        padding: "1px 5px",
+        borderRadius: 4,
+        background: "var(--mesh-blue-soft)",
+        color: "var(--mesh-blue)",
+        border: "1px solid rgba(47, 93, 154, 0.24)",
+        whiteSpace: "nowrap",
+        flexShrink: 0,
+      }}
+      title={`x402 Builder Code: ${code}`}
+    >
+      {code}
+    </span>
+  );
+}
+
 function InsightGrid({ cards }: { cards: ApiGrowthInsightCard[] }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginBottom: 16 }}>
@@ -135,118 +160,6 @@ function SectionCard({ eyebrow, title, children }: { eyebrow?: string; title?: R
       <div style={{ padding: 16 }}>{children}</div>
     </section>
   );
-}
-
-function BubbleMatrix({ rows }: { rows: SourceMediumQualityRow[] }) {
-  const maxVolumeShare = Math.max(...rows.map((row) => row.volumeShare), 0.01);
-  const chartWidth = 480;
-  const plot = { left: 28, top: 14, right: 466, bottom: 204, splitX: 247, splitY: 109 };
-  const bubbles = rows.map((row, index) => {
-    const normalizedVolume = row.volumeShare / maxVolumeShare;
-    const r = 8 + Math.min(row.endpointFrequency / 3, 18);
-    return {
-      row,
-      index,
-      r,
-      x: plot.left + r + normalizedVolume * (plot.right - plot.left - r * 2),
-      y: plot.bottom - r - row.repeatQuality * (plot.bottom - plot.top - r * 2),
-    };
-  });
-  const labels = spreadBubbleLabels(
-    bubbles.map((bubble) => ({
-      source: bubble.row.source,
-      x:
-        bubble.x < plot.splitX
-          ? bubble.x - bubble.r - bubbleLabelWidth(bubble.row.source) / 2 - 5
-          : bubble.x + bubble.r + bubbleLabelWidth(bubble.row.source) / 2 + 5,
-      y: bubble.y + 4,
-    })),
-    plot.top + 14,
-    plot.bottom - 12,
-    chartWidth,
-  );
-
-  return (
-    <div style={{ border: "1px solid var(--line)", borderRadius: 6, padding: 12, background: "var(--surface-card)", marginBottom: 14 }}>
-      <svg viewBox={`0 0 ${chartWidth} 240`} role="img" aria-label="Source medium quality bubble matrix" style={{ width: "100%", height: 240, display: "block" }}>
-        <rect x={plot.left} y={plot.top} width={plot.right - plot.left} height={plot.bottom - plot.top} fill="var(--surface-subtle)" />
-        <line x1={plot.left} y1={plot.bottom} x2={plot.right} y2={plot.bottom} stroke="var(--line-strong)" />
-        <line x1={plot.left} y1={plot.top} x2={plot.left} y2={plot.bottom} stroke="var(--line-strong)" />
-        <line x1={plot.splitX} y1={plot.top} x2={plot.splitX} y2={plot.bottom} stroke="var(--line-strong)" strokeDasharray="4 4" />
-        <line x1={plot.left} y1={plot.splitY} x2={plot.right} y2={plot.splitY} stroke="var(--line-strong)" strokeDasharray="4 4" />
-        <text x={plot.left + 10} y={plot.top + 16} fill="var(--text-3)" fontSize="12" fontWeight="700">Niche adoption</text>
-        <text x={plot.splitX + 56} y={plot.top + 16} fill="var(--mesh-blue)" fontSize="12" fontWeight="700">Scale / double down</text>
-        <text x={plot.left + 10} y={plot.bottom - 10} fill="var(--text-mute)" fontSize="12">Low priority</text>
-        <text x={plot.splitX + 40} y={plot.bottom - 10} fill="var(--text-3)" fontSize="12" fontWeight="700">Improve retention</text>
-        {bubbles.map(({ row, index, r, x, y }) => {
-          const label = labels[index];
-          const labelWidth = bubbleLabelWidth(row.source);
-          const labelSide = label.x < x ? -1 : 1;
-          return (
-            <g key={row.source}>
-              <circle cx={x} cy={y} r={r} fill={index % 2 === 0 ? "var(--mesh-blue)" : "var(--teal)"} opacity="0.82" stroke="var(--surface-card)" strokeWidth="2" />
-              <line x1={x + labelSide * (r + 2)} y1={y} x2={label.x - labelSide * (labelWidth / 2 + 1)} y2={label.y - 4} stroke="var(--line-strong)" strokeWidth="1" opacity="0.58" />
-              <rect
-                x={label.x - labelWidth / 2}
-                y={label.y - 11}
-                width={labelWidth}
-                height="16"
-                rx="4"
-                fill="var(--surface-card)"
-                stroke="var(--line)"
-                opacity="0.94"
-              />
-              <text x={label.x} y={label.y} textAnchor="middle" fill="var(--text-2)" fontSize="12" fontWeight="700">{row.source}</text>
-            </g>
-          );
-        })}
-        <text x={(plot.left + plot.right) / 2} y="228" textAnchor="middle" fill="var(--text-3)" fontSize="12">Acquisition volume, normalized to largest source</text>
-        <text x="10" y={(plot.top + plot.bottom) / 2} transform={`rotate(-90 10 ${(plot.top + plot.bottom) / 2})`} textAnchor="middle" fill="var(--text-3)" fontSize="12">Repeat adoption</text>
-      </svg>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <span style={chipStyle}>bubble: paid endpoint frequency</span>
-        <span style={chipStyle}>color: use case mix</span>
-      </div>
-    </div>
-  );
-}
-
-function spreadBubbleLabels(
-  labels: Array<{ source: string; x: number; y: number }>,
-  minY: number,
-  maxY: number,
-  chartWidth: number,
-): Array<{ source: string; x: number; y: number }> {
-  const minGap = 18;
-  const sorted = labels
-    .map((label, index) => ({
-      ...label,
-      index,
-      x: clamp(label.x, 16 + bubbleLabelWidth(label.source) / 2, chartWidth - 16 - bubbleLabelWidth(label.source) / 2),
-      y: clamp(label.y, minY, maxY),
-    }))
-    .sort((left, right) => left.y - right.y);
-
-  for (let index = 1; index < sorted.length; index += 1) {
-    sorted[index].y = Math.max(sorted[index].y, sorted[index - 1].y + minGap);
-  }
-
-  for (let index = sorted.length - 1; index >= 0; index -= 1) {
-    const maxAllowed = index === sorted.length - 1 ? maxY : sorted[index + 1].y - minGap;
-    sorted[index].y = Math.min(sorted[index].y, maxAllowed);
-  }
-
-  return sorted
-    .sort((left, right) => left.index - right.index)
-    .map(({ source, x, y }) => ({ source, x, y }));
-}
-
-function bubbleLabelWidth(label: string): number {
-  return Math.max(42, label.length * 5.8 + 12);
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
 }
 
 function SourceTable({ rows }: { rows: SourceMediumQualityRow[] }) {
@@ -345,10 +258,15 @@ function SourceRepeatCohort({ cohorts }: { cohorts: ApiGrowthRepeatCohort[] }) {
             <span key={column.label} style={{ textAlign: "center" }}>{column.label}</span>
           ))}
         </div>
-        {cohorts.slice(0, 6).map((cohort) => (
+        {cohorts.slice(0, 6).map((cohort) => {
+          const builderCode = builderCodeFor(cohort.cohort);
+          return (
           <div key={cohort.cohort} style={{ display: "grid", gridTemplateColumns: "1.15fr repeat(3, 0.55fr)", gap: 6, alignItems: "center" }}>
             <div style={{ minWidth: 0 }}>
-              <strong style={{ display: "block", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cohort.cohort}</strong>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                <strong style={{ fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cohort.cohort}</strong>
+                {builderCode ? <BuilderCodeChip code={builderCode.code} /> : null}
+              </div>
               <span style={{ color: "var(--text-mute)", fontSize: 12 }}>{cohort.paidWallets} paid wallets</span>
             </div>
             {columns.map((column) => {
@@ -374,7 +292,8 @@ function SourceRepeatCohort({ cohorts }: { cohorts: ApiGrowthRepeatCohort[] }) {
               );
             })}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -481,18 +400,6 @@ function InboundApiCohort({ cohorts }: { cohorts: ApiGrowthInboundApiCohort[] })
     </div>
   );
 }
-
-const chipStyle: CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  borderRadius: 999,
-  border: "1px solid var(--line)",
-  background: "var(--surface-card)",
-  padding: "6px 9px",
-  color: "var(--text-2)",
-  fontSize: 12,
-  fontWeight: 600,
-};
 
 function insightColor(tone: ApiGrowthInsightCard["tone"]): string {
   if (tone === "teal") return "var(--teal)";

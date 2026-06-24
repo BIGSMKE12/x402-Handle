@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { MACRO_METRICS_DEMO_DATA, type MacroMetricsDemoData } from "@/lib/macro-metrics/demo";
 import { buildApiGrowthIntelligence } from "./metrics";
+import { sourceDisplayLabel } from "./sources";
 
 describe("buildApiGrowthIntelligence", () => {
   test("derives growth channel, endpoint, use case, and recommendation signals", () => {
@@ -9,27 +10,32 @@ describe("buildApiGrowthIntelligence", () => {
     expect(intelligence.insightCards).toHaveLength(5);
     expect(intelligence.insightCards.map((card) => card.label)).toContain("Repeat wallet rate");
     expect(intelligence.insightCards[0].value).not.toBe(intelligence.insightCards[1].value);
-    expect(intelligence.sourceMediumQuality.rows.map((row) => row.source)).toContain(
-      "AgentKit MCP",
-    );
-    expect(intelligence.sourceMediumQuality.rows.map((row) => row.source)).toContain("Dexter");
+    const sourceNames = intelligence.sourceMediumQuality.rows.map((row) => row.source);
+    expect(sourceNames).toContain("AgentCash");
+    expect(sourceNames).toContain("App A");
+    expect(sourceNames).toContain("App B");
+    expect(sourceNames).toContain("App C");
+    expect(sourceNames).toContain("Pay.sh");
+    for (const removed of ["Dexter", "Sponge", "Partner App"]) {
+      expect(sourceNames).not.toContain(removed);
+    }
     expect(
       intelligence.sourceMediumQuality.rows.find((row) => row.source === "Direct")?.wallets,
     ).toBe(100);
     expect(
-      intelligence.sourceMediumQuality.rows.find((row) => row.source === "Sponge")?.wallets,
+      intelligence.sourceMediumQuality.rows.find((row) => row.source === "App B")?.wallets,
     ).toBe(80);
     expect(
-      intelligence.sourceMediumQuality.rows.find((row) => row.source === "Dexter")?.wallets,
+      intelligence.sourceMediumQuality.rows.find((row) => row.source === "App A")?.wallets,
     ).toBe(60);
     expect(
-      intelligence.sourceMediumQuality.rows.find((row) => row.source === "Dexter")?.activationRate,
+      intelligence.sourceMediumQuality.rows.find((row) => row.source === "App A")?.activationRate,
     ).toBeGreaterThan(0.7);
     expect(intelligence.sourceMediumQuality.intentRouteFlows).toHaveLength(6);
     expect(intelligence.sourceMediumQuality.intentRouteFlows[0].middleman).toBe("AgentKit MCP");
     expect(intelligence.sourceMediumQuality.rows[0].qualityScore).toBeGreaterThan(0);
     expect(
-      intelligence.sourceMediumQuality.rows.find((row) => row.source === "AgentKit MCP")
+      intelligence.sourceMediumQuality.rows.find((row) => row.source === "AgentCash")
         ?.endpointFrequency,
     ).toBeGreaterThan(50);
     expect(
@@ -70,8 +76,16 @@ describe("buildApiGrowthIntelligence", () => {
     expect(intelligence.useCaseFit.cards[0].frequency).toBeGreaterThan(10);
     expect(intelligence.useCaseFit.cards[0].agentFit).toBeGreaterThan(0);
     expect(intelligence.recommendations).toHaveLength(4);
-    expect(intelligence.routeSankey.title).toBe("Initial Query → Intermediary → Downstream API");
+    expect(intelligence.routeSankey.title).toBe("Source route → Payment route → End point");
+    expect(intelligence.routeSankey.layer_labels).toEqual({
+      left: "Source route",
+      mid: "Payment route",
+      right: "End point",
+    });
     expect(intelligence.routeSankey.flows.length).toBeGreaterThan(0);
+    expect(intelligence.routeSankey.flows.map((flow) => flow.left_label)).toContain(
+      sourceDisplayLabel("App A"),
+    );
   });
 
   test("keeps all output sections stable for empty offline data", () => {

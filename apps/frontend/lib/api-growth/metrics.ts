@@ -4,8 +4,9 @@ import type {
   MacroServiceId,
   MacroWallet,
 } from "@/lib/macro-metrics/demo";
-import { buildMacroRouteSankeyChart } from "@/lib/macro-metrics/route-sankey";
 import type { X402SankeyChartModel } from "@/lib/x402-analysis/transform";
+import { buildApiGrowthRouteSankeyChart } from "./route-sankey";
+import { sourceMediumFor } from "./sources";
 
 export type ApiGrowthInsightCard = {
   label: string;
@@ -203,7 +204,7 @@ const API_GROWTH_CHANNEL_PROFILES: ApiGrowthChannelProfile[] = [
     },
   },
   {
-    source: "Sponge",
+    source: "App B",
     wallets: 80,
     firstPaid: 44,
     retainedW2: 27,
@@ -223,7 +224,7 @@ const API_GROWTH_CHANNEL_PROFILES: ApiGrowthChannelProfile[] = [
     },
   },
   {
-    source: "Dexter",
+    source: "App A",
     wallets: 60,
     firstPaid: 43,
     retainedW2: 35,
@@ -243,7 +244,7 @@ const API_GROWTH_CHANNEL_PROFILES: ApiGrowthChannelProfile[] = [
     },
   },
   {
-    source: "Partner App",
+    source: "App C",
     wallets: 55,
     firstPaid: 34,
     retainedW2: 20,
@@ -263,7 +264,7 @@ const API_GROWTH_CHANNEL_PROFILES: ApiGrowthChannelProfile[] = [
     },
   },
   {
-    source: "AgentKit MCP",
+    source: "AgentCash",
     wallets: 45,
     firstPaid: 35,
     retainedW2: 32,
@@ -283,7 +284,7 @@ const API_GROWTH_CHANNEL_PROFILES: ApiGrowthChannelProfile[] = [
     },
   },
   {
-    source: "Docs",
+    source: "Pay.sh",
     wallets: 35,
     firstPaid: 16,
     retainedW2: 9,
@@ -310,15 +311,6 @@ const sourceProfileByName = new Map(
 const maxSourceProfileWallets = Math.max(
   ...API_GROWTH_CHANNEL_PROFILES.map((profile) => profile.wallets),
 );
-
-function sourceMediumFor(wallet: MacroWallet): string {
-  if (wallet.intermediary === "Circle Wallets") return "AgentKit MCP";
-  if (wallet.intermediary === "Coinbase CDP") return "Dexter";
-  if (wallet.intermediary === "Privy") return "Sponge";
-  if (wallet.intermediary === "Safe") return "Partner App";
-  if (wallet.source === "Cursor") return "Docs";
-  return "Direct";
-}
 
 function clamp(value: number): number {
   return Math.max(0, Math.min(1, value));
@@ -425,7 +417,7 @@ export function buildApiGrowthIntelligence(data: MacroMetricsDemoData): ApiGrowt
     otherServiceCandidates,
     inboundApiCohorts,
     recommendations: buildRecommendations(sourceRows, endpointRows, useCaseCards),
-    routeSankey: buildMacroRouteSankeyChart(data),
+    routeSankey: buildApiGrowthRouteSankeyChart(data),
     proxyNote:
       "Offline demo model. Source / medium labels and x402 / Agent fit are directional product-growth proxies derived from wallet, session, endpoint, and repeat behavior.",
   };
@@ -438,28 +430,28 @@ function buildTimeToSecondPaidSession(
 
   return [
     {
-      source: "AgentKit MCP",
+      source: "AgentCash",
       repeatedWallets: 32,
       medianHours: 7,
       within24hRate: 0.72,
       within7dRate: 0.91,
     },
     {
-      source: "Dexter",
+      source: "App A",
       repeatedWallets: 35,
       medianHours: 13,
       within24hRate: 0.63,
       within7dRate: 0.84,
     },
     {
-      source: "Partner App",
+      source: "App C",
       repeatedWallets: 26,
       medianHours: 20,
       within24hRate: 0.51,
       within7dRate: 0.76,
     },
     {
-      source: "Sponge",
+      source: "App B",
       repeatedWallets: 27,
       medianHours: 31,
       within24hRate: 0.42,
@@ -1158,7 +1150,7 @@ function buildRecommendations(
       priority: "P0",
     },
     {
-      title: "Improve Sponge activation",
+      title: "Improve App B activation",
       reason: "High-volume channels should be fixed when repeat quality trails the best medium.",
       target: "Activation experiment",
       metric: "W2 repeat rate",

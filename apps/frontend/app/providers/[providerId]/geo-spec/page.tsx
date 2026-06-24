@@ -1,7 +1,8 @@
 import { GeoSpecScreen } from "@/components/geo-spec/GeoSpecScreen";
-import { getProviders } from "@/lib/api/client";
+import { getAeoX402Discovery, getProviders } from "@/lib/api/client";
 import { findProviderByRouteId } from "@/lib/providers";
 import { TopBar } from "@/components/shell/TopBar";
+import { aeoServiceHostCandidates } from "@/lib/geo-spec/discovery";
 import { getGeoSpec } from "@/lib/geo-spec/source";
 import { getTopBarPageContext } from "@/lib/server/page-context";
 import type { ProviderCatalogItemDto } from "@/lib/api/types";
@@ -52,17 +53,22 @@ export default async function GeoSpecPage({
       : null,
   );
 
+  // x402 discovery aggregate, served by the BFF and matched on the provider's
+  // candidate hosts. Null when the provider isn't present in any facilitator
+  // registry (or the BFF is unreachable) — the section then hides itself.
+  const discovery = await getAeoX402Discovery(aeoServiceHostCandidates(spec)).catch(() => null);
+
   return (
     <>
       <TopBar
         providerId={providerId}
-        crumbs={[{ label: "GEO" }]}
+        crumbs={[{ label: "AEO" }]}
         dataMode={pageCtx.dataMode}
         onboarding={{
           id: "geo-spec",
-          title: "Generative Engine Optimization spec",
+          title: "Agentic Engine Optimization spec",
           description:
-            "Show AI agents and humans what this Pay.sh provider does, what it costs, and which paths it serves.",
+            "Show AI agents and humans what this provider does, what it costs, and which paths it serves.",
           metrics: [
             {
               label: "Description",
@@ -89,7 +95,7 @@ export default async function GeoSpecPage({
         }}
       />
       <div className="scroll">
-        <GeoSpecScreen providerId={providerId} spec={spec} />
+        <GeoSpecScreen providerId={providerId} spec={spec} discovery={discovery} />
       </div>
     </>
   );

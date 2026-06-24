@@ -23,6 +23,7 @@ services:
     environment:
       BFF_ANALYTICS_SOURCE: postgres
       BFF_ANALYTICS_DATABASE_URL: postgresql://poc_data:poc_data@postgres:5432/poc_data_test
+      BFF_X402_REFRESH_TOKEN: ${BFF_X402_REFRESH_TOKEN:-dev-x402-refresh-token}
     develop:
       watch:
         - action: sync
@@ -35,6 +36,10 @@ services:
           path: ./packages/contracts
           target: /app/packages/contracts
           initial_sync: true
+        - action: sync
+          path: ./packages/sources
+          target: /app/packages/sources
+          initial_sync: true
         - action: rebuild
           path: ./package.json
         - action: rebuild
@@ -43,6 +48,8 @@ services:
           path: ./apps/bff/package.json
         - action: rebuild
           path: ./packages/contracts/package.json
+        - action: rebuild
+          path: ./packages/sources/package.json
 
   frontend:
     command: bun run dev -- --hostname 0.0.0.0

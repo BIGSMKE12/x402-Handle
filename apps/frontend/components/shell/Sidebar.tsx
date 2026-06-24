@@ -251,7 +251,7 @@ export function Sidebar({ activeProviderId, activeRoute, dataMode, className }: 
             role="link"
             className="nav-item disabled"
             aria-disabled="true"
-            aria-label="GEO (Generative Engine Optimization), setup required"
+            aria-label="AEO (Agentic Engine Optimization), setup required"
           >
             <Icon.geo width={16} height={16} />
             <GeoNavLabel />
@@ -328,9 +328,9 @@ export function Sidebar({ activeProviderId, activeRoute, dataMode, className }: 
 function GeoNavLabel() {
   return (
     <span style={{ flex: 1, display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
-      <span>GEO</span>
+      <span>AEO</span>
       <span style={{ fontSize: 11, color: "var(--text-mute)", fontWeight: 400 }}>
-        SEO for AI agents
+        Agentic Engine Optimization
       </span>
     </span>
   );

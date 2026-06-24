@@ -54,6 +54,8 @@ import {
   RouteAnalyticsSankeyResponseSchema,
   RouteAnalyticsSummaryResponseSchema,
 } from "./route-analytics";
+import type { AeoDiscovery } from "./aeo";
+import { AeoDiscoverySchema } from "./aeo";
 import type {
   PhaseBCustomerProfileResponse,
   WalletUsageGraphResponse,
@@ -126,3 +128,6 @@ export const validateRouteAnalyticsSummaryResponse = (
 export const validateRouteAnalyticsSankeyResponse = (
   value: unknown,
 ): RouteAnalyticsSankeyResponse => RouteAnalyticsSankeyResponseSchema.parse(value);
+
+export const validateAeoDiscoveryResponse = (value: unknown): AeoDiscovery =>
+  AeoDiscoverySchema.parse(value);

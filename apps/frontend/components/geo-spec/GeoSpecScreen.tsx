@@ -1,38 +1,32 @@
+import {
+  type AeoDiscovery,
+  type AeoDiscoveryEndpoint,
+  type FacilitatorDiscoveryRow,
+  getAeoPayShText,
+} from "@/lib/geo-spec/discovery";
 import { formatAtomic, shortAddr } from "@/lib/format";
 import type { GeoSpec, MppRegistryEndpoint } from "@/lib/geo-spec/source";
 
 type Props = {
   providerId: string;
   spec: GeoSpec | null;
+  discovery: AeoDiscovery | null;
 };
 
-export function GeoSpecScreen({ providerId, spec }: Props) {
+export function GeoSpecScreen({ providerId, spec, discovery }: Props) {
   return (
     <div style={{ background: "var(--bg-shell)", minHeight: "100%" }}>
       <div style={{ padding: "32px 40px 80px", maxWidth: 1200, margin: "0 auto" }}>
         <header style={{ marginBottom: 22 }}>
           <div className="eyebrow" style={{ marginBottom: 8 }}>
-            Generative Engine Optimization · Pay.sh provider spec
+            Agentic Engine Optimization
           </div>
           <h1
             className="display"
             style={{ fontSize: 30, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}
           >
-            GEO{spec?.title ? ` · ${spec.title}` : ""}
+            AEO{spec?.title ? ` · ${spec.title}` : ""}
           </h1>
-          <p
-            style={{
-              maxWidth: 820,
-              color: "var(--text-2)",
-              fontSize: 14,
-              lineHeight: 1.6,
-              margin: "8px 0 0",
-            }}
-          >
-            Surface the Pay.sh-published description and use case so AI agents (and humans) can
-            decide when to call this provider, then drill into the supported chains, assets, API
-            paths, and posted prices.
-          </p>
         </header>
 
         {!spec ? (
@@ -40,6 +34,7 @@ export function GeoSpecScreen({ providerId, spec }: Props) {
         ) : (
           <>
             <ProviderDetailsSection spec={spec} />
+            <X402DiscoverySection discovery={discovery} />
             <MppOfficialRegistrySection spec={spec} />
             <PayShSection spec={spec} />
           </>
@@ -118,7 +113,7 @@ function ProviderDetailsSection({ spec }: { spec: GeoSpec }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
           gap: 12,
         }}
       >
@@ -129,10 +124,6 @@ function ProviderDetailsSection({ spec }: { spec: GeoSpec }) {
           value={spec.endpointCount !== null ? String(spec.endpointCount) : null}
           mono
         />
-        <MetaTile label="Metering" value={formatBoolean(spec.hasMetering)} />
-        <MetaTile label="Free tier" value={formatBoolean(spec.hasFreeTier)} />
-        <MetaTile label="Registry version" value={spec.registryVersion} mono />
-        <MetaTile label="Provider sha" value={spec.providerSha} mono />
         <MetaTile
           label="Price range (USD)"
           value={
@@ -149,8 +140,246 @@ function ProviderDetailsSection({ spec }: { spec: GeoSpec }) {
   );
 }
 
+function X402DiscoverySection({ discovery }: { discovery: AeoDiscovery | null }) {
+  if (!discovery) return null;
+
+  return (
+    <section style={{ marginTop: 36 }}>
+      <CatalogSectionHeader badge="x402" title="x402 Discovery" subtitle={discovery.description} />
+
+      <SectionHeading eyebrow="Coverage" title="Discovery footprint" />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gap: 12,
+          marginBottom: 24,
+        }}
+      >
+        <MetaTile
+          label="Registered facilitators"
+          value={`${discovery.coverage.registered} / ${discovery.coverage.total}`}
+          mono
+        />
+        <MetaTile label="Endpoints (unique)" value={String(discovery.totalEndpoints)} mono />
+        <MetaTile
+          label="Verification pass"
+          value={`${Math.round(discovery.verificationPassRate * 100)}%`}
+          mono
+        />
+      </div>
+
+      <AeoChecklist items={discovery.checklist} />
+      <FacilitatorDiscoveryTable facilitators={discovery.facilitators} />
+      <X402EndpointCoverageTable endpoints={discovery.endpoints} note={discovery.endpointsNote} />
+      <p style={{ color: "var(--text-mute)", fontSize: 12, margin: "12px 0 0" }}>
+        Aggregated from CDP, Dexter, and PayAI discovery registries (snapshot {discovery.snapshotDate}).
+      </p>
+    </section>
+  );
+}
+
+function AeoChecklist({ items }: { items: AeoDiscovery["checklist"] }) {
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <SectionHeading eyebrow="AEO health" title="Discovery readiness" />
+      <div style={{ display: "grid", gap: 8 }}>
+        {items.map((item) => (
+          <article
+            key={item.label}
+            className="card"
+            style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 14px" }}
+          >
+            <span
+              aria-hidden
+              style={{
+                flexShrink: 0,
+                width: 20,
+                height: 20,
+                borderRadius: 999,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 12,
+                fontWeight: 800,
+                color: "#fff",
+                background: item.ok ? "var(--teal, #2C7A7B)" : "var(--warn, #B45309)",
+              }}
+            >
+              {item.ok ? "✓" : "!"}
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-1)" }}>
+                {item.label}
+              </div>
+              <div style={{ fontSize: 13, color: "var(--text-mute)", lineHeight: 1.5 }}>
+                {item.hint}
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function facilitatorQuality(row: FacilitatorDiscoveryRow): string {
+  if (row.verificationTotal) {
+    const quality = row.avgQualityScore !== undefined ? ` · q${row.avgQualityScore.toFixed(1)}` : "";
+    return `verified ${row.verificationPass ?? 0}/${row.verificationTotal}${quality}`;
+  }
+  if (row.avgQualityScore !== undefined) return `q${row.avgQualityScore.toFixed(1)}`;
+  return "—";
+}
+
+function FacilitatorDiscoveryTable({
+  facilitators,
+}: {
+  facilitators: FacilitatorDiscoveryRow[];
+}) {
+  return (
+    <div>
+      <SectionHeading eyebrow="By facilitator" title="Registry footprint" />
+      <article className="card" style={{ padding: 0, overflow: "hidden" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={tableHeadRowStyle}>
+              <th style={thStyle}>Facilitator</th>
+              <th style={{ ...thStyle, textAlign: "right" }}>Endpoints</th>
+              <th style={thStyle}>Networks</th>
+              <th style={thStyle}>Scheme</th>
+              <th style={thStyle}>Price (USD)</th>
+              <th style={thStyle}>Quality</th>
+              <th style={thStyle}>Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            {facilitators.map((row) =>
+              row.registered ? (
+                <tr key={row.facilitator} style={tableRowStyle}>
+                  <td style={{ ...tdStyle, fontWeight: 600 }}>{row.facilitator}</td>
+                  <td style={{ ...tdStyle, textAlign: "right" }} className="mono">
+                    {row.endpoints}
+                  </td>
+                  <td style={tdStyle}>{row.networks.join(", ") || "—"}</td>
+                  <td style={tdStyle}>{row.schemes.join(", ") || "—"}</td>
+                  <td style={tdStyle} className="mono">
+                    {row.priceUsd
+                      ? row.priceUsd.min === row.priceUsd.max
+                        ? `$${formatPrice(row.priceUsd.min)}`
+                        : `$${formatPrice(row.priceUsd.min)} – $${formatPrice(row.priceUsd.max)}`
+                      : "—"}
+                  </td>
+                  <td style={tdStyle}>{facilitatorQuality(row)}</td>
+                  <td style={tdStyle} className="mono">
+                    {row.lastUpdated ?? "—"}
+                  </td>
+                </tr>
+              ) : (
+                <tr key={row.facilitator} style={tableRowStyle}>
+                  <td style={{ ...tdStyle, fontWeight: 600 }}>{row.facilitator}</td>
+                  <td style={{ ...tdStyle, textAlign: "right", color: "var(--text-mute)" }}>—</td>
+                  <td style={{ ...tdStyle, color: "var(--text-mute)" }}>—</td>
+                  <td style={{ ...tdStyle, color: "var(--text-mute)" }}>—</td>
+                  <td style={{ ...tdStyle, color: "var(--text-mute)" }}>—</td>
+                  <td style={{ ...tdStyle, color: "var(--warn, #B45309)", fontWeight: 600 }}>
+                    Not registered · improvement area
+                  </td>
+                  <td style={{ ...tdStyle, color: "var(--text-mute)" }}>—</td>
+                </tr>
+              ),
+            )}
+          </tbody>
+        </table>
+      </article>
+    </div>
+  );
+}
+
+function FacilitatorCoverageChip({ label, active }: { label: string; active: boolean }) {
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        fontSize: 10.5,
+        fontWeight: 700,
+        padding: "2px 7px",
+        borderRadius: 999,
+        marginRight: 5,
+        border: "1px solid",
+        borderColor: active ? "var(--mesh-blue, #2F5D9A)" : "var(--border-subtle, #e5e7eb)",
+        background: active ? "var(--mesh-blue-soft, rgba(47,93,154,0.10))" : "transparent",
+        color: active ? "var(--mesh-blue, #2F5D9A)" : "var(--text-mute)",
+        opacity: active ? 1 : 0.55,
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+function X402EndpointCoverageTable({
+  endpoints,
+  note,
+}: {
+  endpoints: AeoDiscoveryEndpoint[];
+  note?: string;
+}) {
+  const rows = [...endpoints].sort((a, b) => (b.qualityScore ?? -1) - (a.qualityScore ?? -1));
+
+  return (
+    <section style={{ marginTop: 24 }}>
+      <SectionHeading
+        eyebrow="By endpoint"
+        title="Per-endpoint coverage"
+        note={
+          note ??
+          "Which facilitator registries list each path, with its price and Dexter quality score."
+        }
+      />
+      <article className="card" style={{ padding: 0, overflow: "hidden" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={tableHeadRowStyle}>
+              <th style={thStyle}>Endpoint</th>
+              <th style={thStyle}>Facilitators</th>
+              <th style={thStyle}>Networks</th>
+              <th style={{ ...thStyle, textAlign: "right" }}>Price (USD)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((endpoint) => (
+              <tr key={endpoint.path} style={tableRowStyle}>
+                <td style={tdStyle}>
+                  <div style={{ fontWeight: 600 }}>{endpoint.name}</div>
+                  <div className="mono" style={{ fontSize: 11.5, color: "var(--text-mute)" }}>
+                    {endpoint.path}
+                  </div>
+                </td>
+                <td style={tdStyle}>
+                  <FacilitatorCoverageChip label="CDP" active={endpoint.onCdp} />
+                  <FacilitatorCoverageChip label="Dexter" active={endpoint.onDexter} />
+                  <FacilitatorCoverageChip label="PayAI" active={endpoint.onPayai} />
+                </td>
+                <td style={tdStyle}>{endpoint.networks.join(", ")}</td>
+                <td className="mono" style={{ ...tdStyle, textAlign: "right" }}>
+                  ${formatPrice(endpoint.priceUsd)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </article>
+    </section>
+  );
+}
+
 function PayShSection({ spec }: { spec: GeoSpec }) {
-  const hasDescription = !!(spec.description || spec.useCase);
+  // Curated AEO text overrides the baked atlas description/use case when present.
+  const payShText = getAeoPayShText(spec);
+  const description = payShText?.description ?? spec.description;
+  const useCase = payShText?.useCase ?? spec.useCase;
+  const hasDescription = !!(description || useCase);
   const hasOffers = spec.offers.length > 0;
   const hasObservedEndpoints = spec.observedEndpoints.length > 0;
   // Hide the entire section when the active provider has no Pay.sh data at all.
@@ -173,8 +402,8 @@ function PayShSection({ spec }: { spec: GeoSpec }) {
               gap: 14,
             }}
           >
-            {spec.description ? <DefinitionCard label="Description" body={spec.description} /> : null}
-            {spec.useCase ? <DefinitionCard label="Use case" body={spec.useCase} /> : null}
+            {description ? <DefinitionCard label="Description" body={description} /> : null}
+            {useCase ? <DefinitionCard label="Use case" body={useCase} /> : null}
           </div>
         </div>
       ) : null}
@@ -424,11 +653,6 @@ function formatPrice(value: number): string {
   if (value < 1) return value.toFixed(3);
   if (value < 100) return value.toFixed(2);
   return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
-
-function formatBoolean(value: boolean | null): string | null {
-  if (value === null) return null;
-  return value ? "Yes" : "No";
 }
 
 const tableHeadRowStyle: React.CSSProperties = {

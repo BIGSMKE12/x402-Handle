@@ -47,6 +47,15 @@ export const methodNotAllowed = () =>
     { status: 405, headers: { allow: "GET" } },
   );
 
+export const badRequest = (message: string) =>
+  json({ error: "bad_request", message }, { status: 400 });
+
+export const unauthorized = (message = "Missing or invalid authorization.") =>
+  json({ error: "unauthorized", message }, { status: 401 });
+
+export const forbidden = (message = "Forbidden.") =>
+  json({ error: "forbidden", message }, { status: 403 });
+
 export const analyticsLoading = () =>
   json(
     {
