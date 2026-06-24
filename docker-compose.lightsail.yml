@@ -2,7 +2,7 @@ name: flovia-lightsail
 
 x-bff-runtime-limits: &bff-runtime-limits
   cpus: ${BFF_CPUS:-1.5}
-  mem_limit: ${BFF_MEMORY_LIMIT:-1500m}
+  mem_limit: ${BFF_MEMORY_LIMIT:-800m}
   memswap_limit: ${BFF_MEMORY_SWAP_LIMIT:-2g}
   pids_limit: ${BFF_PIDS_LIMIT:-256}
   oom_score_adj: ${BFF_OOM_SCORE_ADJ:-500}
