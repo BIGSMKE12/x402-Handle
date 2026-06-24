@@ -4,6 +4,7 @@ import {
   type FacilitatorDiscoveryRow,
   getAeoPayShText,
 } from "@/lib/geo-spec/discovery";
+import { networkLabels } from "@/lib/geo-spec/network-label";
 import { formatAtomic, shortAddr } from "@/lib/format";
 import type { GeoSpec, MppRegistryEndpoint } from "@/lib/geo-spec/source";
 
@@ -261,7 +262,7 @@ function FacilitatorDiscoveryTable({
                   <td style={{ ...tdStyle, textAlign: "right" }} className="mono">
                     {row.endpoints}
                   </td>
-                  <td style={tdStyle}>{row.networks.join(", ") || "—"}</td>
+                  <td style={tdStyle}>{networkLabels(row.networks).join(", ") || "—"}</td>
                   <td style={tdStyle}>{row.schemes.join(", ") || "—"}</td>
                   <td style={tdStyle} className="mono">
                     {row.priceUsd
@@ -361,7 +362,7 @@ function X402EndpointCoverageTable({
                   <FacilitatorCoverageChip label="Dexter" active={endpoint.onDexter} />
                   <FacilitatorCoverageChip label="PayAI" active={endpoint.onPayai} />
                 </td>
-                <td style={tdStyle}>{endpoint.networks.join(", ")}</td>
+                <td style={tdStyle}>{networkLabels(endpoint.networks).join(", ")}</td>
                 <td className="mono" style={{ ...tdStyle, textAlign: "right" }}>
                   ${formatPrice(endpoint.priceUsd)}
                 </td>
@@ -533,7 +534,7 @@ function PayShObservedEndpointsTable({ spec }: { spec: GeoSpec }) {
                   </td>
                   <td style={{ ...tdStyle, overflowWrap: "anywhere" }}>{e.description ?? "—"}</td>
                   <td style={{ ...tdStyle, overflowWrap: "anywhere" }}>
-                    {e.networks.join(", ") || "—"}
+                    {networkLabels(e.networks).join(", ") || "—"}
                   </td>
                   <td
                     style={{

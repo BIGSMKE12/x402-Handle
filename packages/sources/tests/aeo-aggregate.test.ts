@@ -83,6 +83,26 @@ describe("aggregateAeoDiscovery", () => {
     ).toBeNull();
   });
 
+  test("checklist follows the listing→freshness→description→io→verification order", () => {
+    // Nansen is registered on all three facilitators (incl. Dexter), so the
+    // full checklist with the verification item is present.
+    const result = aggregateAeoDiscovery(snapshots, "api.nansen.ai");
+    expect(result?.checklist.map((c) => c.label)).toEqual([
+      "Listed on all facilitators",
+      "Freshness (updated ≤ 30d)",
+      "Description published",
+      "Input/output schema",
+      "Verification passing",
+    ]);
+  });
+
+  test("omits the verification check when the service is not listed on Dexter", () => {
+    // QuickNode is on CDP + PayAI only — no Dexter, so no verification signal.
+    const result = aggregateAeoDiscovery(snapshots, "x402.quicknode.com");
+    expect(result?.facilitators[1]?.registered).toBe(false); // Dexter
+    expect(result?.checklist.some((c) => c.label === "Verification passing")).toBe(false);
+  });
+
   test("honors an explicit snapshotDate and description override", () => {
     const result = aggregateAeoDiscovery(snapshots, "pro-api.coingecko.com", {
       snapshotDate: "2026-06-24",

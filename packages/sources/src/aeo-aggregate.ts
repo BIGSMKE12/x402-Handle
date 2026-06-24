@@ -250,36 +250,12 @@ const buildChecklist = (
   const missing = FACILITATOR_ORDER.filter((f) => !registeredFacilitators.includes(f)).map(
     (f) => FACILITATOR_LABEL[f],
   );
+  // Verification is a Dexter-only signal. When the service is not listed on
+  // Dexter there is nothing to verify, so the verification check is omitted
+  // rather than surfaced as a failure.
+  const dexterRegistered = registeredFacilitators.includes("dexter");
 
-  const checklist: AeoChecklistItem[] = [
-    {
-      label: "Description published",
-      ok: totalItems > 0 && describedItems === totalItems,
-      hint: `${describedItems} / ${totalItems} listings include an agent-readable description.`,
-    },
-    {
-      label: "Input/output schema",
-      ok: schemaItems > 0,
-      hint:
-        schemaItems > 0
-          ? `${schemaItems} CDP (Bazaar) listings expose a JSON schema agents can introspect.`
-          : "No facilitator listing exposes an input/output schema (CDP Bazaar).",
-    },
-    {
-      label: "Verification passing",
-      ok: verifTotal > 0 && verifPass === verifTotal,
-      hint:
-        verifTotal > 0
-          ? `${verifPass} / ${verifTotal} endpoints pass Dexter verification.`
-          : "No facilitator reports verification for this service.",
-    },
-    {
-      label: "Freshness (updated ≤ 30d)",
-      ok: withinDays(maxLastUpdated, snapshotDate, 30),
-      hint: maxLastUpdated
-        ? `Listings last refreshed ${maxLastUpdated}.`
-        : "No freshness signal on the listings.",
-    },
+  const facilitatorListing: AeoChecklistItem =
     missing.length === 0
       ? {
           label: "Listed on all facilitators",
@@ -290,8 +266,43 @@ const buildChecklist = (
           label: `Not listed on ${missing.join(", ")}`,
           ok: false,
           hint: `Not registered on ${missing.join(", ")} — registering would extend agent reach.`,
-        },
-  ];
+        };
+
+  const freshness: AeoChecklistItem = {
+    label: "Freshness (updated ≤ 30d)",
+    ok: withinDays(maxLastUpdated, snapshotDate, 30),
+    hint: maxLastUpdated
+      ? `Listings last refreshed ${maxLastUpdated}.`
+      : "No freshness signal on the listings.",
+  };
+
+  const description: AeoChecklistItem = {
+    label: "Description published",
+    ok: totalItems > 0 && describedItems === totalItems,
+    hint: `${describedItems} / ${totalItems} listings include an agent-readable description.`,
+  };
+
+  const inputOutput: AeoChecklistItem = {
+    label: "Input/output schema",
+    ok: schemaItems > 0,
+    hint:
+      schemaItems > 0
+        ? `${schemaItems} CDP (Bazaar) listings expose a JSON schema agents can introspect.`
+        : "No facilitator listing exposes an input/output schema (CDP Bazaar).",
+  };
+
+  const verification: AeoChecklistItem = {
+    label: "Verification passing",
+    ok: verifTotal > 0 && verifPass === verifTotal,
+    hint:
+      verifTotal > 0
+        ? `${verifPass} / ${verifTotal} endpoints pass Dexter verification.`
+        : "No facilitator reports verification for this service.",
+  };
+
+  // Order: facilitator listing, freshness, description, input/output, verification.
+  const checklist: AeoChecklistItem[] = [facilitatorListing, freshness, description, inputOutput];
+  if (dexterRegistered) checklist.push(verification);
 
   return checklist;
 };
