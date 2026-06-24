@@ -53,6 +53,26 @@ describe("lightsail shared stack", () => {
     expect(syncScript).not.toContain("nginx");
   });
 
+  test("caddy reload retries until the freshly recreated admin API is ready", () => {
+    const syncScript = read("./lightsail-sync-stack.sh");
+
+    // A freshly recreated caddy container does not have its admin API (port
+    // 2019) listening the instant `dc up -d caddy` returns, so an immediate
+    // reload races the startup and fails with "connection refused". The reload
+    // must be wrapped in a bounded retry loop instead of being called directly.
+    expect(syncScript).toContain("reload_caddy() {");
+    expect(syncScript).toContain("reload_caddy");
+    expect(syncScript.match(/dc up -d caddy\n\s*reload_caddy/)).not.toBeNull();
+    // The retry loop owns the only direct reload invocation.
+    expect(
+      syncScript.split(
+        "dc exec -T -w /etc/caddy caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile",
+      ).length - 1,
+    ).toBe(1);
+    expect(syncScript).not.toContain("remove_old_bff_images");
+    expect(syncScript).not.toContain("nginx");
+  });
+
   test("deployment sync infers active develop slot from running containers", () => {
     const syncScript = read("./lightsail-sync-stack.sh");
 

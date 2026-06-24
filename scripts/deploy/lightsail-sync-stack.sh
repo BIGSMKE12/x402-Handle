@@ -287,6 +287,32 @@ write_caddyfile() {
   sed -i "s|develop-bff-[a-z]*:3001|develop-bff-${develop_slot}:3001|g" "$stack_caddy_config"
 }
 
+# Reload the running Caddy with the freshly written Caddyfile. `dc up -d caddy`
+# returns as soon as the container is started, but a just (re)created caddy has
+# not yet bound its admin API on localhost:2019, so an immediate reload races
+# the startup and fails with "connection refused". Reload is idempotent, so we
+# retry until the admin API answers (or give up after the bounded budget).
+reload_caddy() {
+  local attempts=30
+  local interval=2
+  local attempt=0
+
+  while [ "$attempt" -lt "$attempts" ]; do
+    attempt=$((attempt + 1))
+    if dc exec -T -w /etc/caddy caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile; then
+      echo "Caddy configuration reloaded."
+      return 0
+    fi
+
+    printf 'Caddy reload attempt %d/%d failed (admin API not ready yet); retrying in %ds...\n' \
+      "$attempt" "$attempts" "$interval" >&2
+    sleep "$interval"
+  done
+
+  echo "Caddy reload failed after ${attempts} attempts" >&2
+  return 1
+}
+
 wait_for_service_ready() {
   local service="$1"
   local timeout_secs=600
@@ -390,7 +416,7 @@ blue_green_deploy() {
     write_caddyfile "$main_caddy_slot" "$next_slot"
   fi
   dc up -d caddy
-  dc exec -T -w /etc/caddy caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
+  reload_caddy
 
   if [ -n "$active_slot" ]; then
     old_service="${service_prefix}-${active_slot}"
