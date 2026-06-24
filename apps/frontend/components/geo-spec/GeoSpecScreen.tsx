@@ -335,7 +335,7 @@ function X402EndpointCoverageTable({
         title="Per-endpoint coverage"
         note={
           note ??
-          "Which facilitator registries list each path, with its price and Dexter quality score."
+          "Which facilitator registries list each path, with its price plus CDP's rolling 30-day call volume and unique payer count."
         }
       />
       <article className="card" style={{ padding: 0, overflow: "hidden" }}>
@@ -346,6 +346,8 @@ function X402EndpointCoverageTable({
               <th style={thStyle}>Facilitators</th>
               <th style={thStyle}>Networks</th>
               <th style={{ ...thStyle, textAlign: "right" }}>Price (USD)</th>
+              <th style={{ ...thStyle, textAlign: "right" }}>30d calls (CDP)</th>
+              <th style={{ ...thStyle, textAlign: "right" }}>30d unique payers (CDP)</th>
             </tr>
           </thead>
           <tbody>
@@ -365,6 +367,16 @@ function X402EndpointCoverageTable({
                 <td style={tdStyle}>{networkLabels(endpoint.networks).join(", ")}</td>
                 <td className="mono" style={{ ...tdStyle, textAlign: "right" }}>
                   ${formatPrice(endpoint.priceUsd)}
+                </td>
+                <td className="mono" style={{ ...tdStyle, textAlign: "right" }}>
+                  {endpoint.cdpL30DaysTotalCalls !== undefined
+                    ? endpoint.cdpL30DaysTotalCalls.toLocaleString()
+                    : "—"}
+                </td>
+                <td className="mono" style={{ ...tdStyle, textAlign: "right" }}>
+                  {endpoint.cdpL30DaysUniquePayers !== undefined
+                    ? endpoint.cdpL30DaysUniquePayers.toLocaleString()
+                    : "—"}
                 </td>
               </tr>
             ))}
@@ -448,39 +460,39 @@ function PayShOffersTable({ spec }: { spec: GeoSpec }) {
         note="Each row is one (chain × asset × payTo) combination Pay.sh published. Probe price is the per-call USD amount Pay.sh observed from a probe; individual endpoint prices are not separately published."
       />
       <article className="card" style={{ padding: 0, overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={tableHeadRowStyle}>
-                <th style={thStyle}>Protocol</th>
-                <th style={thStyle}>Chain</th>
-                <th style={thStyle}>Asset</th>
-                <th style={thStyle}>payTo</th>
-                <th style={{ ...thStyle, textAlign: "right" }}>Probe price (USD)</th>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={tableHeadRowStyle}>
+              <th style={thStyle}>Protocol</th>
+              <th style={thStyle}>Chain</th>
+              <th style={thStyle}>Asset</th>
+              <th style={thStyle}>payTo</th>
+              <th style={{ ...thStyle, textAlign: "right" }}>Probe price (USD)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {spec.offers.map((o, i) => (
+              <tr key={`${o.protocol}-${o.chain}-${o.asset}-${o.payTo}-${i}`} style={tableRowStyle}>
+                <td style={tdStyle}>{o.protocol}</td>
+                <td style={tdStyle}>{o.chain}</td>
+                <td style={tdStyle}>{o.asset}</td>
+                <td style={{ ...tdStyle, fontFamily: "var(--mono)", fontSize: 12 }}>
+                  {shortAddr(o.payTo)}
+                </td>
+                <td
+                  style={{
+                    ...tdStyle,
+                    textAlign: "right",
+                    fontFamily: "var(--mono)",
+                  }}
+                >
+                  ${formatPrice(o.probePriceUsd)}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {spec.offers.map((o, i) => (
-                <tr key={`${o.protocol}-${o.chain}-${o.asset}-${o.payTo}-${i}`} style={tableRowStyle}>
-                  <td style={tdStyle}>{o.protocol}</td>
-                  <td style={tdStyle}>{o.chain}</td>
-                  <td style={tdStyle}>{o.asset}</td>
-                  <td style={{ ...tdStyle, fontFamily: "var(--mono)", fontSize: 12 }}>
-                    {shortAddr(o.payTo)}
-                  </td>
-                  <td
-                    style={{
-                      ...tdStyle,
-                      textAlign: "right",
-                      fontFamily: "var(--mono)",
-                    }}
-                  >
-                    ${formatPrice(o.probePriceUsd)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </article>
+            ))}
+          </tbody>
+        </table>
+      </article>
     </section>
   );
 }
@@ -494,71 +506,71 @@ function PayShObservedEndpointsTable({ spec }: { spec: GeoSpec }) {
         note="Per-endpoint USD price is not separately published in the Pay.sh catalog — only the per-offer probe price above. Observed spend is the total paid amount seen in the current fixture, formatted as USDC where applicable, not a posted price."
       />
       <article className="card" style={{ padding: 0, overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
-            <colgroup>
-              <col style={{ width: "30%" }} />
-              <col style={{ width: 90 }} />
-              <col />
-              <col style={{ width: 140 }} />
-              <col />
-              <col style={{ width: 90 }} />
-              <col style={{ width: 140 }} />
-            </colgroup>
-            <thead>
-              <tr style={tableHeadRowStyle}>
-                <th style={thStyle}>Resource (path)</th>
-                <th style={thStyle}>Method</th>
-                <th style={thStyle}>Description</th>
-                <th style={thStyle}>Chains</th>
-                <th style={thStyle}>Assets</th>
-                <th style={{ ...thStyle, textAlign: "right" }}>Tx count</th>
-                <th style={{ ...thStyle, textAlign: "right" }}>Observed spend (USDC)</th>
+        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+          <colgroup>
+            <col style={{ width: "30%" }} />
+            <col style={{ width: 90 }} />
+            <col />
+            <col style={{ width: 140 }} />
+            <col />
+            <col style={{ width: 90 }} />
+            <col style={{ width: 140 }} />
+          </colgroup>
+          <thead>
+            <tr style={tableHeadRowStyle}>
+              <th style={thStyle}>Resource (path)</th>
+              <th style={thStyle}>Method</th>
+              <th style={thStyle}>Description</th>
+              <th style={thStyle}>Chains</th>
+              <th style={thStyle}>Assets</th>
+              <th style={{ ...thStyle, textAlign: "right" }}>Tx count</th>
+              <th style={{ ...thStyle, textAlign: "right" }}>Observed spend (USDC)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {spec.observedEndpoints.map((e) => (
+              <tr key={e.resource} style={tableRowStyle}>
+                <td
+                  style={{
+                    ...tdStyle,
+                    fontFamily: "var(--mono)",
+                    fontSize: 12,
+                    wordBreak: "break-all",
+                  }}
+                  title={e.resource}
+                >
+                  {pathOf(e.resource)}
+                </td>
+                <td style={{ ...tdStyle, fontFamily: "var(--mono)", fontSize: 12 }}>
+                  {e.method ?? "—"}
+                </td>
+                <td style={{ ...tdStyle, overflowWrap: "anywhere" }}>{e.description ?? "—"}</td>
+                <td style={{ ...tdStyle, overflowWrap: "anywhere" }}>
+                  {networkLabels(e.networks).join(", ") || "—"}
+                </td>
+                <td
+                  style={{
+                    ...tdStyle,
+                    fontFamily: "var(--mono)",
+                    fontSize: 12,
+                    overflowWrap: "anywhere",
+                    wordBreak: "break-all",
+                  }}
+                  title={e.assets.join(", ")}
+                >
+                  {e.assets.join(", ") || "—"}
+                </td>
+                <td style={{ ...tdStyle, textAlign: "right", fontFamily: "var(--mono)" }}>
+                  {e.transactionCount.toLocaleString()}
+                </td>
+                <td style={{ ...tdStyle, textAlign: "right", fontFamily: "var(--mono)" }}>
+                  {formatAtomic(e.totalAmountAtomic)}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {spec.observedEndpoints.map((e) => (
-                <tr key={e.resource} style={tableRowStyle}>
-                  <td
-                    style={{
-                      ...tdStyle,
-                      fontFamily: "var(--mono)",
-                      fontSize: 12,
-                      wordBreak: "break-all",
-                    }}
-                    title={e.resource}
-                  >
-                    {pathOf(e.resource)}
-                  </td>
-                  <td style={{ ...tdStyle, fontFamily: "var(--mono)", fontSize: 12 }}>
-                    {e.method ?? "—"}
-                  </td>
-                  <td style={{ ...tdStyle, overflowWrap: "anywhere" }}>{e.description ?? "—"}</td>
-                  <td style={{ ...tdStyle, overflowWrap: "anywhere" }}>
-                    {networkLabels(e.networks).join(", ") || "—"}
-                  </td>
-                  <td
-                    style={{
-                      ...tdStyle,
-                      fontFamily: "var(--mono)",
-                      fontSize: 12,
-                      overflowWrap: "anywhere",
-                      wordBreak: "break-all",
-                    }}
-                    title={e.assets.join(", ")}
-                  >
-                    {e.assets.join(", ") || "—"}
-                  </td>
-                  <td style={{ ...tdStyle, textAlign: "right", fontFamily: "var(--mono)" }}>
-                    {e.transactionCount.toLocaleString()}
-                  </td>
-                  <td style={{ ...tdStyle, textAlign: "right", fontFamily: "var(--mono)" }}>
-                    {formatAtomic(e.totalAmountAtomic)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </article>
+            ))}
+          </tbody>
+        </table>
+      </article>
     </section>
   );
 }

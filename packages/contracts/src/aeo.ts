@@ -69,6 +69,9 @@ export const AeoDiscoveryEndpointSchema = z
     onDexter: z.boolean(),
     onPayai: z.boolean(),
     qualityScore: z.number().optional(), // Dexter quality
+    // CDP-only rolling 30-day usage signals.
+    cdpL30DaysTotalCalls: z.number().int().nonnegative().optional(),
+    cdpL30DaysUniquePayers: z.number().int().nonnegative().optional(),
   })
   .strict();
 

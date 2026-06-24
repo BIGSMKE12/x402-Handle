@@ -39,6 +39,14 @@ export type X402ItemMetadata = {
   [key: string]: unknown;
 };
 
+// CDP-only usage signals (rolling 30-day window) carried on the discovery item.
+export type X402ItemQuality = {
+  l30DaysTotalCalls?: number;
+  l30DaysUniquePayers?: number;
+  lastCalledAt?: string;
+  [key: string]: unknown;
+};
+
 // A single discovery resource as returned by a facilitator. External data, so
 // fields are permissive; the aggregator reads them defensively.
 export type X402DiscoveryItem = {
@@ -50,6 +58,7 @@ export type X402DiscoveryItem = {
   accepts?: X402Accept[];
   lastUpdated?: string;
   metadata?: X402ItemMetadata;
+  quality?: X402ItemQuality;
   extensions?: { bazaar?: unknown; [key: string]: unknown };
   [key: string]: unknown;
 };
@@ -79,6 +88,12 @@ export const slimX402DiscoveryItem = (item: X402DiscoveryItem): X402DiscoveryIte
         qualityScore: item.metadata.qualityScore,
         verificationStatus: item.metadata.verificationStatus,
         tier: item.metadata.tier,
+      }
+    : undefined,
+  quality: item.quality
+    ? {
+        l30DaysTotalCalls: item.quality.l30DaysTotalCalls,
+        l30DaysUniquePayers: item.quality.l30DaysUniquePayers,
       }
     : undefined,
   extensions: item.extensions?.bazaar ? { bazaar: true } : undefined,

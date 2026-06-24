@@ -61,10 +61,27 @@ describe("aggregateAeoDiscovery", () => {
     expect(result.endpoints.every((e) => typeof e.onCdp === "boolean")).toBe(true);
   });
 
+  test("carries CDP 30-day usage signals on per-endpoint coverage", () => {
+    const result = aggregateAeoDiscovery(snapshots, "api.nansen.ai");
+    const netflow = result?.endpoints.find((e) => e.path === "/api/v1/smart-money/netflow");
+    expect(netflow?.cdpL30DaysTotalCalls).toBe(275);
+    expect(netflow?.cdpL30DaysUniquePayers).toBe(23);
+  });
+
   test("nansen is registered on all three facilitators", () => {
     const result = aggregateAeoDiscovery(snapshots, "api.nansen.ai");
     expect(result?.coverage).toEqual({ registered: 3, total: 3 });
     expect(result?.facilitators[2]?.registered).toBe(true); // PayAI
+  });
+
+  test("normalizes 18-decimal (BSC) stablecoin amounts instead of inflating price", () => {
+    // Nansen lists 18-decimal BNB Chain stablecoins; treating them as 6-decimal
+    // inflated the CDP price to ~$50B. Correct decimals keep it cent-scale.
+    const result = aggregateAeoDiscovery(snapshots, "api.nansen.ai");
+    const cdp = result?.facilitators.find((f) => f.facilitator === "Coinbase CDP");
+    expect(cdp?.priceUsd).not.toBeNull();
+    expect(cdp?.priceUsd?.max ?? 0).toBeLessThanOrEqual(1);
+    expect(cdp?.priceUsd?.max ?? 0).toBeCloseTo(0.05, 5);
   });
 
   test("stableenrich is registered on CDP + Dexter only", () => {

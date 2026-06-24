@@ -10,7 +10,7 @@ import {
   type FacilitatorDiscoveryRow,
   networkDisplayLabel,
 } from "contracts";
-import type { X402DiscoveryItem, X402Facilitator } from "./x402-discovery";
+import type { X402Accept, X402DiscoveryItem, X402Facilitator } from "./x402-discovery";
 
 export type AeoAggregateInput = Record<X402Facilitator, X402DiscoveryItem[]>;
 
@@ -28,9 +28,41 @@ const FACILITATOR_LABEL: Record<X402Facilitator, string> = {
   payai: "PayAI",
 };
 
-// USDC has 6 decimals; the demo discovery data is USDC-denominated. Non-USDC
-// assets would need a per-asset decimals map (out of scope).
-const USDC_DECIMALS = 6;
+// Most x402 stablecoins (USDC and friends) use 6 decimals, but some tokens use
+// 18 — notably BNB Smart Chain stablecoins. The discovery payload almost never
+// carries an explicit `decimals` (and the slim projection drops it), so resolve
+// it from any decimals field, then a per-asset override, then a per-network
+// default, falling back to 6. Without this, an 18-decimal amount divided by 10^6
+// inflates the price by ~10^12 (e.g. Nansen's BSC listings showed $50B).
+const DEFAULT_DECIMALS = 6;
+
+// Networks whose stablecoin listings are predominantly 18-decimal.
+const NETWORK_DECIMALS: Record<string, number> = {
+  "eip155:56": 18, // BNB Smart Chain
+};
+
+// 18-decimal tokens on networks whose default is 6, keyed by lowercased address.
+const ASSET_DECIMALS: Record<string, number> = {
+  "0x431d5dff03120afa4bdf332c61a6e1766ef37bdb": 18, // JPY Coin (Polygon)
+  "0xfafddbb3fc7688494971a79cc65dca3ef82079e7": 18, // USDm
+  "0x50ec5ed76e336a7823b6924c2839defa0c5a3a2d": 18, // x402 Roshambo (Base)
+  "0x88fb150bdc53a65fe94dea0c9ba0a6daf8c6e196": 18, // Base 18-decimal token
+};
+
+const resolveDecimals = (accept: X402Accept): number => {
+  const explicit =
+    typeof accept.decimals === "number"
+      ? accept.decimals
+      : typeof accept.extra?.decimals === "number"
+        ? (accept.extra.decimals as number)
+        : undefined;
+  if (typeof explicit === "number" && Number.isFinite(explicit)) return explicit;
+  const asset = accept.asset?.toLowerCase();
+  if (asset && ASSET_DECIMALS[asset] !== undefined) return ASSET_DECIMALS[asset];
+  const network = accept.network;
+  if (network && NETWORK_DECIMALS[network] !== undefined) return NETWORK_DECIMALS[network];
+  return DEFAULT_DECIMALS;
+};
 
 const NETWORK_PRIORITY = ["Base", "Solana", "Polygon", "Ethereum"];
 
@@ -52,9 +84,10 @@ const pathOf = (url: string | undefined): string => {
   }
 };
 
-const amountToUsd = (amount: string | undefined): number | null => {
+const amountToUsd = (accept: X402Accept): number | null => {
+  const amount = accept.amount;
   if (!amount || !/^\d+$/.test(amount)) return null;
-  return Number(amount) / 10 ** USDC_DECIMALS;
+  return Number(amount) / 10 ** resolveDecimals(accept);
 };
 
 const isoDate = (value: string | undefined): string | undefined => {
@@ -123,7 +156,7 @@ const buildFacilitatorStats = (
     for (const accept of item.accepts ?? []) {
       if (accept.network) networks.add(networkDisplayLabel(accept.network));
       if (accept.scheme) schemes.add(accept.scheme);
-      const usd = amountToUsd(accept.amount);
+      const usd = amountToUsd(accept);
       if (usd !== null) {
         hasPrice = true;
         priceMin = Math.min(priceMin, usd);
@@ -173,6 +206,8 @@ type PathAgg = {
   onDexter: boolean;
   onPayai: boolean;
   qualityScore?: number;
+  cdpTotalCalls?: number;
+  cdpUniquePayers?: number;
 };
 
 const buildEndpoints = (
@@ -195,13 +230,25 @@ const buildEndpoints = (
         };
         pathMap.set(path, agg);
       }
-      if (facilitator === "cdp") agg.onCdp = true;
+      if (facilitator === "cdp") {
+        agg.onCdp = true;
+        // CDP-only usage signals. Sum calls across CDP listings sharing a path;
+        // unique payers can overlap, so take the max as a safe lower bound.
+        const totalCalls = item.quality?.l30DaysTotalCalls;
+        if (typeof totalCalls === "number") {
+          agg.cdpTotalCalls = (agg.cdpTotalCalls ?? 0) + totalCalls;
+        }
+        const uniquePayers = item.quality?.l30DaysUniquePayers;
+        if (typeof uniquePayers === "number") {
+          agg.cdpUniquePayers = Math.max(agg.cdpUniquePayers ?? 0, uniquePayers);
+        }
+      }
       if (facilitator === "dexter") agg.onDexter = true;
       if (facilitator === "payai") agg.onPayai = true;
 
       for (const accept of item.accepts ?? []) {
         if (accept.network) agg.networks.add(networkDisplayLabel(accept.network));
-        const usd = amountToUsd(accept.amount);
+        const usd = amountToUsd(accept);
         if (usd !== null) agg.prices.push(usd);
       }
       const displayName = item.metadata?.displayName;
@@ -225,6 +272,8 @@ const buildEndpoints = (
     onDexter: agg.onDexter,
     onPayai: agg.onPayai,
     qualityScore: agg.qualityScore,
+    cdpL30DaysTotalCalls: agg.cdpTotalCalls,
+    cdpL30DaysUniquePayers: agg.cdpUniquePayers,
   }));
 };
 
