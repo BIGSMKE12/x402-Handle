@@ -406,6 +406,34 @@ describe("BFF routes", () => {
     expect(parsed.providers.some((provider) => provider.hasCustomerFacts)).toBe(true);
   });
 
+  test("omits heavy per-endpoint resources from the provider list", async () => {
+    const handler = createBffHandler(fixtureAnalyticsDataSource);
+
+    const response = await handler(request("/providers"));
+    const parsed = validateProviderCatalogResponse(await response.json());
+
+    expect(response.status).toBe(200);
+    // The list endpoint must not carry the heavy `resources` array (it inflated
+    // the payload ~50x); the summary `resourceCount` is retained for callers.
+    expect(parsed.providers.every((provider) => provider.resources === undefined)).toBe(true);
+    expect(parsed.providers.every((provider) => typeof provider.resourceCount === "number")).toBe(
+      true,
+    );
+  });
+
+  test("serves a single provider by id and 404s unknown ids", async () => {
+    const handler = createBffHandler(fixtureAnalyticsDataSource);
+    const knownId = fixtureAnalyticsDataSource.providers.providers[0]?.providerId ?? "";
+
+    const found = await handler(request(`/providers/${encodeURIComponent(knownId)}`));
+    expect(found.status).toBe(200);
+    const row = (await found.json()) as { providerId: string };
+    expect(row.providerId).toBe(knownId);
+
+    const missing = await handler(request("/providers/does-not-exist"));
+    expect(missing.status).toBe(404);
+  });
+
   test("marks snapshot-backed read endpoints as edge-cacheable", async () => {
     const handler = createBffHandler(fixtureAnalyticsDataSource);
 

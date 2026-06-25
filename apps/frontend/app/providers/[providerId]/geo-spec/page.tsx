@@ -12,14 +12,20 @@ export default async function GeoSpecPage({
 }: {
   params: Promise<{ providerId: string }>;
 }) {
-  const { providerId } = await params;
-  const pageCtx = await getTopBarPageContext();
+  // `params`, the TopBar context, and the provider catalog are mutually
+  // independent, so fetch them concurrently rather than serially — the catalog
+  // fetch dominates latency and must not block the others.
+  //
   // The live BFF row is only used as a hint for `getGeoSpec` so it can find
   // the right entry in the baked GEO data file via serviceId / brandKey /
   // payTo. baked JSON is the authoritative source for description, offers,
   // observed endpoints, and MPP-registry endpoints. The hint is a graceful
   // fallback when no baked entry is found (e.g. a fresh user-saved provider).
-  const allProviders = await getProviders().catch(() => [] as ProviderCatalogItemDto[]);
+  const [{ providerId }, pageCtx, allProviders] = await Promise.all([
+    params,
+    getTopBarPageContext(),
+    getProviders().catch(() => [] as ProviderCatalogItemDto[]),
+  ]);
   const liveProvider = findProviderByRouteId(allProviders, providerId) ?? null;
 
   const spec = getGeoSpec(

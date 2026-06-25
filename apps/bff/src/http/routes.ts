@@ -45,3 +45,14 @@ export const matchCustomerRoute = (path: string): CustomerRouteMatch | null => {
   }
   return null;
 };
+
+// `/providers/:providerId` — single-provider detail (full row, incl. `resources`).
+// The list endpoint (`/providers`) is intentionally lightweight, so callers that
+// need a specific provider's full payload fetch it here by canonical providerId.
+const PROVIDER_DETAIL_PATTERN = /^\/providers\/([^/]+)$/;
+
+export const matchProviderDetailRoute = (path: string): { providerId: string } | null => {
+  const match = path.match(PROVIDER_DETAIL_PATTERN);
+  if (!match?.[1]) return null;
+  return { providerId: decodeURIComponent(match[1]) };
+};

@@ -6,6 +6,7 @@ import {
   resolveAnalyticsDataSource,
 } from "./data/analytics-source";
 import { BffLlmUnavailableError, type BffLlmService, resolveBffLlmService } from "./data/llm";
+import { type ProviderListView, deriveProviderListView } from "./data/provider-list-view";
 import { buildWorkflowIntentInputFromProfile, toWorkflowIntentInput } from "./data/workflow-intent";
 import { type X402DiscoveryStore, createX402DiscoveryStore } from "./data/x402-discovery/store";
 import {
@@ -28,6 +29,7 @@ import {
 import {
   AEO_X402_REFRESH_PATH,
   matchCustomerRoute,
+  matchProviderDetailRoute,
   normalizePath,
   readonlyRoutes,
 } from "./http/routes";
@@ -55,7 +57,7 @@ type AnalyticsLoadState =
   | {
       status: "ready" | "fallback";
       promise: Promise<BffAnalyticsDataSource>;
-      dataSource: BffAnalyticsDataSource;
+      dataSource: BffAnalyticsDataSource & ProviderListView;
       error?: string;
     }
   | {
@@ -111,13 +113,23 @@ export const createBffHandler = (
 ) => {
   let analyticsState: AnalyticsLoadState;
 
+  // Attach request-cheap derived views (lightweight provider list + by-id lookup)
+  // once, at the moment a data source becomes ready, so request handlers never
+  // pay to strip/index the catalog per request.
+  const withProviderViews = (
+    source: BffAnalyticsDataSource,
+  ): BffAnalyticsDataSource & ProviderListView => ({
+    ...source,
+    ...deriveProviderListView(source.providers),
+  });
+
   const setFallbackState = (promise: Promise<BffAnalyticsDataSource>, error: unknown) => {
     const message = error instanceof Error ? error.message : "Analytics preload failed.";
     console.error("Analytics preload failed; falling back to fixture analytics.", error);
     analyticsState = {
       status: "fallback",
       promise,
-      dataSource: fixtureAnalyticsDataSource,
+      dataSource: withProviderViews(fixtureAnalyticsDataSource),
       error: message,
     };
     return fixtureAnalyticsDataSource;
@@ -131,7 +143,7 @@ export const createBffHandler = (
         analyticsState = {
           status: "ready",
           promise,
-          dataSource: resolved,
+          dataSource: withProviderViews(resolved),
         };
         return promise;
       }
@@ -142,7 +154,7 @@ export const createBffHandler = (
           analyticsState = {
             status: "ready",
             promise: sourcePromise,
-            dataSource: loaded,
+            dataSource: withProviderViews(loaded),
           };
           return loaded;
         },
@@ -227,6 +239,7 @@ export const createBffHandler = (
     const url = new URL(request.url);
     const path = normalizePath(url);
     const customerRoute = matchCustomerRoute(path);
+    const providerRoute = matchProviderDetailRoute(path);
 
     if (request.method !== "GET") {
       if (request.method === "POST" && path === AEO_X402_REFRESH_PATH) {
@@ -240,7 +253,12 @@ export const createBffHandler = (
         return handleShowcaseRoute(request, path) ?? notFound(path);
       }
 
-      if (readonlyRoutes.has(path) || showcaseRoutes.has(path) || customerRoute !== null) {
+      if (
+        readonlyRoutes.has(path) ||
+        showcaseRoutes.has(path) ||
+        customerRoute !== null ||
+        providerRoute !== null
+      ) {
         return methodNotAllowed();
       }
 
@@ -308,7 +326,7 @@ export const createBffHandler = (
     const showcaseResponse = handleShowcaseRoute(request, path);
     if (showcaseResponse) return showcaseResponse;
 
-    if (!readonlyRoutes.has(path) && customerRoute === null) {
+    if (!readonlyRoutes.has(path) && customerRoute === null && providerRoute === null) {
       return notFound(path);
     }
 
@@ -321,7 +339,7 @@ export const createBffHandler = (
 
     switch (path) {
       case "/providers":
-        return cachedJson(activeDataSource.providers);
+        return cachedJson(activeDataSource.providersList);
       case "/customers": {
         const serviceId = url.searchParams.get("serviceId");
         if (serviceId) {
@@ -345,6 +363,11 @@ export const createBffHandler = (
         return cachedJson(activeDataSource.routeSankey);
       default:
         break;
+    }
+
+    if (providerRoute) {
+      const provider = activeDataSource.getProviderById(providerRoute.providerId);
+      return provider ? cachedJson(provider) : notFound(path);
     }
 
     if (customerRoute?.kind === "profile") {
