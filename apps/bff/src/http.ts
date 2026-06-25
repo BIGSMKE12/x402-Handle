@@ -29,6 +29,7 @@ import {
 import {
   AEO_X402_REFRESH_PATH,
   matchCustomerRoute,
+  matchProviderDetailRoute,
   normalizePath,
   readonlyRoutes,
 } from "./http/routes";
@@ -238,6 +239,7 @@ export const createBffHandler = (
     const url = new URL(request.url);
     const path = normalizePath(url);
     const customerRoute = matchCustomerRoute(path);
+    const providerRoute = matchProviderDetailRoute(path);
 
     if (request.method !== "GET") {
       if (request.method === "POST" && path === AEO_X402_REFRESH_PATH) {
@@ -251,7 +253,12 @@ export const createBffHandler = (
         return handleShowcaseRoute(request, path) ?? notFound(path);
       }
 
-      if (readonlyRoutes.has(path) || showcaseRoutes.has(path) || customerRoute !== null) {
+      if (
+        readonlyRoutes.has(path) ||
+        showcaseRoutes.has(path) ||
+        customerRoute !== null ||
+        providerRoute !== null
+      ) {
         return methodNotAllowed();
       }
 
@@ -319,7 +326,7 @@ export const createBffHandler = (
     const showcaseResponse = handleShowcaseRoute(request, path);
     if (showcaseResponse) return showcaseResponse;
 
-    if (!readonlyRoutes.has(path) && customerRoute === null) {
+    if (!readonlyRoutes.has(path) && customerRoute === null && providerRoute === null) {
       return notFound(path);
     }
 
@@ -356,6 +363,11 @@ export const createBffHandler = (
         return cachedJson(activeDataSource.routeSankey);
       default:
         break;
+    }
+
+    if (providerRoute) {
+      const provider = activeDataSource.getProviderById(providerRoute.providerId);
+      return provider ? cachedJson(provider) : notFound(path);
     }
 
     if (customerRoute?.kind === "profile") {

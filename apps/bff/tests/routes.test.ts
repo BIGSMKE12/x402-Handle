@@ -421,6 +421,19 @@ describe("BFF routes", () => {
     );
   });
 
+  test("serves a single provider by id and 404s unknown ids", async () => {
+    const handler = createBffHandler(fixtureAnalyticsDataSource);
+    const knownId = fixtureAnalyticsDataSource.providers.providers[0]?.providerId ?? "";
+
+    const found = await handler(request(`/providers/${encodeURIComponent(knownId)}`));
+    expect(found.status).toBe(200);
+    const row = (await found.json()) as { providerId: string };
+    expect(row.providerId).toBe(knownId);
+
+    const missing = await handler(request("/providers/does-not-exist"));
+    expect(missing.status).toBe(404);
+  });
+
   test("marks snapshot-backed read endpoints as edge-cacheable", async () => {
     const handler = createBffHandler(fixtureAnalyticsDataSource);
 
