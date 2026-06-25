@@ -406,6 +406,21 @@ describe("BFF routes", () => {
     expect(parsed.providers.some((provider) => provider.hasCustomerFacts)).toBe(true);
   });
 
+  test("omits heavy per-endpoint resources from the provider list", async () => {
+    const handler = createBffHandler(fixtureAnalyticsDataSource);
+
+    const response = await handler(request("/providers"));
+    const parsed = validateProviderCatalogResponse(await response.json());
+
+    expect(response.status).toBe(200);
+    // The list endpoint must not carry the heavy `resources` array (it inflated
+    // the payload ~50x); the summary `resourceCount` is retained for callers.
+    expect(parsed.providers.every((provider) => provider.resources === undefined)).toBe(true);
+    expect(parsed.providers.every((provider) => typeof provider.resourceCount === "number")).toBe(
+      true,
+    );
+  });
+
   test("marks snapshot-backed read endpoints as edge-cacheable", async () => {
     const handler = createBffHandler(fixtureAnalyticsDataSource);
 
