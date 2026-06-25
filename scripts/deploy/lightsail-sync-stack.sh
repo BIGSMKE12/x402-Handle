@@ -315,8 +315,8 @@ reload_caddy() {
 
 wait_for_service_ready() {
   local service="$1"
-  local timeout_secs=600
-  local interval=5
+  local timeout_secs=1200
+  local interval=10
   local attempt=0
   local container_id container_ip ready_url response
   local start_time elapsed remaining request_timeout sleep_for
