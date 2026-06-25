@@ -295,8 +295,6 @@ export const POSTGRES_LIVE_PROVIDER_QUERY = `
             'amountAtomic', po.amount_atomic::text,
             'description', r.raw ->> 'description',
             'method', r.raw #>> '{extensions,bazaar,info,input,method}',
-            'inputSchema', r.raw #> '{extensions,bazaar,schema}',
-            'lastUpdated', r.raw ->> 'lastUpdated',
             'x402Version', r.raw -> 'x402Version',
             'l30DaysTotalCalls', r.raw #> '{quality,l30DaysTotalCalls}',
             'l30DaysUniquePayers', r.raw #> '{quality,l30DaysUniquePayers}'
@@ -356,8 +354,6 @@ export const POSTGRES_LIVE_PROVIDER_QUERY = `
             'amountAtomic', po.amount_atomic::text,
             'description', r.raw ->> 'description',
             'method', r.raw #>> '{extensions,bazaar,info,input,method}',
-            'inputSchema', r.raw #> '{extensions,bazaar,schema}',
-            'lastUpdated', r.raw ->> 'lastUpdated',
             'x402Version', r.raw -> 'x402Version',
             'l30DaysTotalCalls', r.raw #> '{quality,l30DaysTotalCalls}',
             'l30DaysUniquePayers', r.raw #> '{quality,l30DaysUniquePayers}'
