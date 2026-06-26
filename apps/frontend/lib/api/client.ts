@@ -38,7 +38,7 @@ const SNAPSHOT_REVALIDATE_SECONDS = 60;
 // Cap snapshot-backed BFF requests so a slow/cold BFF cannot hang a server
 // render (and the navigation that awaits it) indefinitely. LLM endpoints opt
 // out of this — they are intentionally long-running.
-const SNAPSHOT_FETCH_TIMEOUT_MS = 8000;
+const SNAPSHOT_FETCH_TIMEOUT_MS = 20 * 1000;
 
 function stripTrailingSlash(url: string): string {
   return url.replace(/\/$/, "");
