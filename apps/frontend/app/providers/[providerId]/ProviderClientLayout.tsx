@@ -42,22 +42,30 @@ export function ProviderClientLayout({
   const activeRoute = deriveActiveRoute(pathname);
   const { stored, hydrated } = useProviders();
 
+  // Stellar registry ids son "<contractId>/<providerId>" (siempre llevan "/");
+  // los legacy providerId (multi-chain) nunca lo hacen. Esos providers viven
+  // on-chain, no en el setup local-storage legacy, así que no aplica el
+  // redirect a /setup.
+  const isStellarProviderId = providerId.includes("/");
+
   // Phase 9: redirect to /setup は On-chain only モードのみ.
   // SDK connected モードでは fixture が常にデータを返せるので Setup を経由する必要が無い.
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || isStellarProviderId) return;
     if (dataMode === "onChainOnly" && stored.length === 0) {
       router.replace("/setup");
     }
-  }, [hydrated, dataMode, stored.length, router]);
+  }, [hydrated, dataMode, stored.length, router, isStellarProviderId]);
 
   // Provider catalog loading should not block the server-rendered page body.
   // Only hide children after hydration confirms an on-chain setup has no providers.
-  const showSkeleton = shouldShowProviderLayoutSkeleton({
-    hydrated,
-    dataMode,
-    storedCount: stored.length,
-  });
+  const showSkeleton =
+    !isStellarProviderId &&
+    shouldShowProviderLayoutSkeleton({
+      hydrated,
+      dataMode,
+      storedCount: stored.length,
+    });
 
   return (
     <AppShell

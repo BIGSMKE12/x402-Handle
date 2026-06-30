@@ -7,3 +7,4 @@ export * from "./provider-catalog";
 export * from "./customer-intelligence";
 export * from "./service-analytics";
 export * from "./validators";
+export * from "./stellar-provider";

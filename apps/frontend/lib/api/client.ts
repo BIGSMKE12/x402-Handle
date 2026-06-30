@@ -1,8 +1,11 @@
 import {
   type AeoDiscovery,
   type PhaseBCustomerProfileResponse,
+  type ProviderIntelligence,
   type RouteAnalyticsSankeyResponse,
   type RouteAnalyticsSummaryResponse,
+  type StatsOverview,
+  type StellarProvider,
   type WalletUsageGraphResponse,
   validateAeoDiscoveryResponse,
   validatePhaseBCustomerListResponse,
@@ -10,8 +13,12 @@ import {
   validatePhaseBCustomerProfileResponse,
   validatePhaseBWalletUsageGraphResponse,
   validateProviderCatalogResponse,
+  validateProviderIntelligenceResponse,
   validateRouteAnalyticsSankeyResponse,
   validateRouteAnalyticsSummaryResponse,
+  validateStatsOverviewResponse,
+  validateStellarProviderListResponse,
+  validateStellarProviderResponse,
 } from "contracts";
 import {
   adaptCustomerList,
@@ -148,6 +155,112 @@ export async function getAeoX402Discovery(
   }
 
   return validateAeoDiscoveryResponse(await response.json());
+}
+
+// Registry Stellar (Día 4 BFF routes) — dominio separado del catálogo legacy
+// multi-chain de arriba (getProviders/getCustomers).
+export type StellarHealth = {
+  status: "ok" | "degraded";
+  horizon: boolean;
+  soroban: boolean;
+  database: boolean;
+  registryContractId: string | null;
+};
+
+export async function getStellarProviders(): Promise<StellarProvider[]> {
+  return validateStellarProviderListResponse(await bffFetch<unknown>("/stellar/providers"));
+}
+
+export async function getStellarProvider(id: string): Promise<StellarProvider | null> {
+  const response = await fetch(`${bffBaseUrl()}/stellar/providers/${encodeURIComponent(id)}`, {
+    next: { revalidate: SNAPSHOT_REVALIDATE_SECONDS },
+    headers: { accept: "application/json" },
+    signal: AbortSignal.timeout(SNAPSHOT_FETCH_TIMEOUT_MS),
+  });
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error(
+      `Data request failed: ${response.status} ${response.statusText} (/stellar/providers/${id})`,
+    );
+  }
+  return validateStellarProviderResponse(await response.json());
+}
+
+export async function getStellarProviderIntelligence(
+  id: string,
+): Promise<ProviderIntelligence | null> {
+  const response = await fetch(
+    `${bffBaseUrl()}/stellar/providers/${encodeURIComponent(id)}/intelligence`,
+    {
+      next: { revalidate: SNAPSHOT_REVALIDATE_SECONDS },
+      headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(SNAPSHOT_FETCH_TIMEOUT_MS),
+    },
+  );
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error(
+      `Data request failed: ${response.status} ${response.statusText} (/stellar/providers/${id}/intelligence)`,
+    );
+  }
+  return validateProviderIntelligenceResponse(await response.json());
+}
+
+export async function getStellarHealth(): Promise<StellarHealth> {
+  return bffFetch<StellarHealth>("/stellar/health");
+}
+
+export async function getStatsOverview(): Promise<StatsOverview> {
+  return validateStatsOverviewResponse(await bffFetch<unknown>("/stats/overview"));
+}
+
+export type RankedStellarProvider = {
+  provider: StellarProvider;
+  trustScore: number;
+  matchScore: number;
+  reasons: string[];
+};
+
+export type RecommendStellarProvidersFilter = { category?: string; maxPriceUsdc?: number };
+
+// Llamado client-side desde /playground — sin caché de Next (el usuario
+// cambia los filtros en vivo).
+export async function recommendStellarProviders(
+  filter: RecommendStellarProvidersFilter = {},
+): Promise<RankedStellarProvider[]> {
+  const params = new URLSearchParams();
+  if (filter.category) params.set("category", filter.category);
+  if (filter.maxPriceUsdc !== undefined) params.set("maxPriceUsdc", String(filter.maxPriceUsdc));
+  const query = params.toString() ? `?${params.toString()}` : "";
+  const response = await fetch(`${bffBaseUrl()}/stellar/recommend${query}`, {
+    cache: "no-store",
+    headers: { accept: "application/json" },
+  });
+  if (!response.ok) {
+    throw new Error(`Data request failed: ${response.status} ${response.statusText} (/stellar/recommend)`);
+  }
+  return (await response.json()) as RankedStellarProvider[];
+}
+
+export type PlaygroundPayResult =
+  | {
+      ok: true;
+      txHash: string;
+      amountUsdc: string;
+      memo: string;
+      elapsedMs: number;
+      data: unknown;
+    }
+  | { ok: false; error: string; message: string };
+
+export async function runPlaygroundPayment(providerId: string): Promise<PlaygroundPayResult> {
+  const response = await fetch(`${bffBaseUrl()}/stellar/playground/pay`, {
+    method: "POST",
+    cache: "no-store",
+    headers: { "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify({ providerId }),
+  });
+  return (await response.json()) as PlaygroundPayResult;
 }
 
 export type GetCustomersFilter = { payTo?: string; serviceId?: string };

@@ -273,7 +273,7 @@ export function EntryPointInsight({
           color: "var(--text-mute)",
         }}
       >
-        Install the Flovia SDK on your API to capture exact step position, endpoint, and per-loop attribution.
+        Install the HANDLE SDK on your API to capture exact step position, endpoint, and per-loop attribution.
       </div>
     </InsightCard>
   );
@@ -337,7 +337,7 @@ export function RecentActivityInsight({
             color: "var(--text-mute)",
           }}
         >
-          Growth versus an earlier baseline is not yet available. Install the Flovia SDK on your API
+          Growth versus an earlier baseline is not yet available. Install the HANDLE SDK on your API
           to track week-over-week activity changes for this wallet.
         </div>
       )}

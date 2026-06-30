@@ -8,7 +8,7 @@ export default async function SolanaMppShowcasePage() {
   return (
     <>
       <TopBar
-        fallbackProviderName="Flovia"
+        fallbackProviderName="HANDLE"
         crumbs={[{ label: "MPP Showcase", href: "/showcase" }, { label: "Solana MPP" }]}
         dataMode={dataMode}
       />

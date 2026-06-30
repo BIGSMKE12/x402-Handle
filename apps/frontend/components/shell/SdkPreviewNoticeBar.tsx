@@ -12,7 +12,7 @@ export async function SdkPreviewNoticeBar() {
       <span className="sdk-notice-dot" aria-hidden="true">
         ●
       </span>
-      Preview: this is what your dashboard looks like with the Flovia SDK installed (mock data).
+      Preview: this is what your dashboard looks like with the HANDLE SDK installed (mock data).
     </div>
   );
 }

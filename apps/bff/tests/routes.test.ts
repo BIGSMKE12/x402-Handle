@@ -475,7 +475,10 @@ describe("BFF routes", () => {
     expect(sankey.nodes.some((node) => node.label === "/v1/scrape")).toBe(true);
   });
 
-  test("merges MPP catalog into providers when overlay path is provided", async () => {
+  // Skipped: mergeProviderCatalogs es un stub no-op desde la migración a
+  // Stellar (packages/sources/src/legacy-x402-stub.ts) — el overlay MPP es
+  // legacy multi-chain, fuera de scope para el hackathon 100%-Stellar.
+  test.skip("merges MPP catalog into providers when overlay path is provided", async () => {
     const tempDir = path.join(process.cwd(), "tmp", `bff-mpp-${randomUUID()}`);
     fs.mkdirSync(tempDir, { recursive: true });
     const overlayPath = path.join(tempDir, "mpp-catalog.json");

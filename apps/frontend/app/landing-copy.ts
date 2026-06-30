@@ -1,0 +1,226 @@
+export type Lang = "en" | "es";
+
+export const LANDING_COPY = {
+  en: {
+    nav: [
+      { href: "#how-it-works", label: "How it works" },
+      { href: "#metrics", label: "Metrics" },
+      { href: "#integrate", label: "How to integrate" },
+      { href: "#faq", label: "FAQ" },
+    ],
+    launchApp: "Launch app",
+    badge: "100% Stellar · Soroban testnet",
+    heroTitle: "Turn x402 payments into trusted agentic commerce",
+    heroBody:
+      "HANDLE is the discovery and reputation layer for agent-to-agent payments on Stellar. Discover providers from the Soroban registry, rank them with a deterministic Trust Score, and pay with native USDC over x402 — all in one SDK call.",
+    tryPlayground: "Try the playground",
+    viewProviders: "View provider catalog",
+    problemEyebrow: "The problem",
+    problemTitle: "Agentic payments without a trust layer don't scale",
+    problems: [
+      {
+        index: "01 / Discovery",
+        title: "Providers are hard to find",
+        body: "Agents calling x402 APIs have no reliable way to discover who is registered, what they charge, or whether they can be trusted.",
+      },
+      {
+        index: "02 / Trust gap",
+        title: "Payment success is not trust",
+        body: "A provider taking a payment does not mean it is reliable, fairly priced, or worth paying again — there is no auditable signal for that.",
+      },
+      {
+        index: "03 / Manual integration",
+        title: "Every agent reinvents x402",
+        body: "Discover, challenge, sign, submit, retry — every agent team rebuilds the same Stellar payment flow from scratch.",
+      },
+      {
+        index: "04 / No feedback loop",
+        title: "Growth signals are scattered",
+        body: "Providers can't see registrations, payment volume, or category demand in one place to know where to invest next.",
+      },
+    ],
+    pipelineEyebrow: "API Growth Intelligence",
+    pipelineTitle: "Discover, score, pay, and grow — on Stellar",
+    pipeline: [
+      {
+        step: "01",
+        title: "Discover",
+        body: "Pull the full on-chain provider catalog straight from the Soroban registry contract — no off-chain index to trust.",
+        tags: ["Soroban registry", "Live testnet data", "Category + price filters"],
+      },
+      {
+        step: "02",
+        title: "Score",
+        body: "A deterministic, auditable Trust Score and ranker combine on-chain history with price and category fit — no black-box ML.",
+        tags: ["Trust Score breakdown", "Deterministic ranker", "No ML, fully explainable"],
+      },
+      {
+        step: "03",
+        title: "Pay",
+        body: "x402-Stellar handles the full challenge → sign → submit → retry flow with native USDC, in one SDK call.",
+        tags: ["x402 over Stellar", "Native USDC", "Real testnet settlement"],
+      },
+      {
+        step: "04",
+        title: "Grow",
+        body: "Providers see registrations, lifetime volume, and category breakdown in one stats view to know where demand is moving.",
+        tags: ["Live stats dashboard", "Category breakdown", "30d + lifetime volume"],
+      },
+    ],
+    metricsEyebrow: "Metrics",
+    metricsTitle: "Live from Soroban testnet",
+    systemOk: (deployed: boolean) => `System ok · registry ${deployed ? "deployed" : "—"}`,
+    systemUnavailable: "System status unavailable",
+    metricLabels: {
+      providerCount: "Registered providers",
+      activeProviderCount: "Active providers",
+      verifiedProviderCount: "Verified providers",
+      paymentCountLifetime: "Total payments",
+      volumeLifetimeUsdc: "Total volume",
+      volume30dUsdc: "30d volume",
+    },
+    categoryBreakdown: "Category breakdown",
+    viewStats: "View full stats dashboard →",
+    integrateEyebrow: "How to integrate",
+    integrateTitle: "Add HANDLE to your agent in one SDK call",
+    integrateBody: " discovers, ranks, and pays Stellar x402 providers without you touching Soroban directly.",
+    viewSdkDocs: "View full SDK documentation →",
+    faqEyebrow: "Frequently asked questions",
+    faqTitle: "Everything you need to know",
+    faq: [
+      {
+        q: "Is HANDLE an x402 explorer?",
+        a: "No. HANDLE is a discovery and trust layer for agentic payments on Stellar. It starts with the on-chain registry and adds a deterministic Trust Score, ranking, and a one-call SDK on top.",
+      },
+      {
+        q: "Does HANDLE support other chains?",
+        a: "Not during this hackathon. HANDLE is 100% Stellar — Soroban smart contracts, native USDC, and x402 over the Stellar network. No EVM, no Solana, no multi-chain.",
+      },
+      {
+        q: "How is the Trust Score calculated?",
+        a: "It's deterministic and auditable: it combines on-chain payment history, provider verification status, and category fit. It is not an ML model, so every score is fully explainable.",
+      },
+      {
+        q: "What do I need to start paying providers?",
+        a: "An agent with a funded Stellar testnet account and the @flovia/agent-sdk package. discoverAndCall() handles discovery, ranking, and payment in a single call.",
+      },
+      {
+        q: "Can providers register without writing code?",
+        a: "Provider registration happens against the Soroban registry contract. A guided registration UI is on the roadmap for after the hackathon submission.",
+      },
+    ],
+    footer: "HANDLE — built for the Stellar Community Fund hackathon, 100% testnet.",
+    backToTop: "Back to top ↑",
+  },
+  es: {
+    nav: [
+      { href: "#how-it-works", label: "Cómo funciona" },
+      { href: "#metrics", label: "Métricas" },
+      { href: "#integrate", label: "Cómo integrar" },
+      { href: "#faq", label: "Preguntas frecuentes" },
+    ],
+    launchApp: "Abrir app",
+    badge: "100% Stellar · Soroban testnet",
+    heroTitle: "Convertí pagos x402 en comercio agéntico confiable",
+    heroBody:
+      "HANDLE es la capa de descubrimiento y reputación para pagos agente-a-agente sobre Stellar. Descubrí proveedores desde el registro Soroban, ordenalos con un Trust Score determinístico, y pagá con USDC nativo vía x402 — todo en una sola llamada del SDK.",
+    tryPlayground: "Probar el playground",
+    viewProviders: "Ver catálogo de providers",
+    problemEyebrow: "El problema",
+    problemTitle: "Los pagos agénticos sin una capa de confianza no escalan",
+    problems: [
+      {
+        index: "01 / Descubrimiento",
+        title: "Los proveedores son difíciles de encontrar",
+        body: "Los agentes que llaman APIs x402 no tienen una forma confiable de descubrir quién está registrado, cuánto cobra, o si es confiable.",
+      },
+      {
+        index: "02 / Brecha de confianza",
+        title: "Cobrar un pago no es lo mismo que ser confiable",
+        body: "Que un proveedor reciba un pago no significa que sea confiable, que tenga buen precio, o que valga la pena volver a pagarle — no hay una señal auditable de eso.",
+      },
+      {
+        index: "03 / Integración manual",
+        title: "Cada agente reinventa x402",
+        body: "Descubrir, recibir el challenge, firmar, enviar, reintentar — cada equipo de agentes reconstruye el mismo flujo de pago de Stellar desde cero.",
+      },
+      {
+        index: "04 / Sin loop de feedback",
+        title: "Las señales de crecimiento están dispersas",
+        body: "Los proveedores no pueden ver registros, volumen de pagos, ni demanda por categoría en un solo lugar para saber dónde invertir.",
+      },
+    ],
+    pipelineEyebrow: "API Growth Intelligence",
+    pipelineTitle: "Descubrí, evaluá, pagá y crecé — sobre Stellar",
+    pipeline: [
+      {
+        step: "01",
+        title: "Descubrir",
+        body: "Trae el catálogo completo de proveedores on-chain directo del contrato registry de Soroban — sin un índice off-chain en el que confiar.",
+        tags: ["Registro Soroban", "Datos en vivo de testnet", "Filtros por categoría y precio"],
+      },
+      {
+        step: "02",
+        title: "Evaluar",
+        body: "Un Trust Score determinístico y auditable, junto a un ranker, combinan historial on-chain con precio y categoría — sin caja negra de ML.",
+        tags: ["Desglose de Trust Score", "Ranker determinístico", "Sin ML, 100% explicable"],
+      },
+      {
+        step: "03",
+        title: "Pagar",
+        body: "x402-Stellar maneja el flujo completo de challenge → firma → envío → reintento con USDC nativo, en una sola llamada del SDK.",
+        tags: ["x402 sobre Stellar", "USDC nativo", "Settlement real en testnet"],
+      },
+      {
+        step: "04",
+        title: "Crecer",
+        body: "Los proveedores ven registros, volumen histórico y desglose por categoría en una sola vista de stats para saber hacia dónde se mueve la demanda.",
+        tags: ["Dashboard de stats en vivo", "Desglose por categoría", "Volumen 30d + histórico"],
+      },
+    ],
+    metricsEyebrow: "Métricas",
+    metricsTitle: "En vivo desde Soroban testnet",
+    systemOk: (deployed: boolean) => `Sistema ok · registry ${deployed ? "deployado" : "—"}`,
+    systemUnavailable: "Estado del sistema no disponible",
+    metricLabels: {
+      providerCount: "Providers registrados",
+      activeProviderCount: "Providers activos",
+      verifiedProviderCount: "Providers verificados",
+      paymentCountLifetime: "Pagos totales",
+      volumeLifetimeUsdc: "Volumen total",
+      volume30dUsdc: "Volumen 30d",
+    },
+    categoryBreakdown: "Desglose por categoría",
+    viewStats: "Ver dashboard completo de stats →",
+    integrateEyebrow: "Cómo integrar",
+    integrateTitle: "Sumá HANDLE a tu agente en una llamada del SDK",
+    integrateBody: " descubre, ordena y paga providers x402 de Stellar sin que toques Soroban directamente.",
+    viewSdkDocs: "Ver la documentación completa del SDK →",
+    faqEyebrow: "Preguntas frecuentes",
+    faqTitle: "Todo lo que necesitás saber",
+    faq: [
+      {
+        q: "¿HANDLE es un explorador de x402?",
+        a: "No. HANDLE es una capa de descubrimiento y confianza para pagos agénticos sobre Stellar. Parte del registro on-chain y le suma un Trust Score determinístico, ranking, y un SDK de una sola llamada.",
+      },
+      {
+        q: "¿HANDLE soporta otras blockchains?",
+        a: "No durante este hackathon. HANDLE es 100% Stellar — contratos Soroban, USDC nativo, y x402 sobre la red de Stellar. Sin EVM, sin Solana, sin multi-chain.",
+      },
+      {
+        q: "¿Cómo se calcula el Trust Score?",
+        a: "Es determinístico y auditable: combina historial de pagos on-chain, estado de verificación del proveedor, y ajuste por categoría. No es un modelo de ML, así que cada score es 100% explicable.",
+      },
+      {
+        q: "¿Qué necesito para empezar a pagar providers?",
+        a: "Un agente con una cuenta de Stellar testnet fondeada y el paquete @flovia/agent-sdk. discoverAndCall() maneja descubrimiento, ranking y pago en una sola llamada.",
+      },
+      {
+        q: "¿Los proveedores pueden registrarse sin escribir código?",
+        a: "El registro de proveedores se hace contra el contrato registry de Soroban. Una UI guiada de registro está en el roadmap para después de la entrega del hackathon.",
+      },
+    ],
+    footer: "HANDLE — construido para el hackathon de Stellar Community Fund, 100% testnet.",
+    backToTop: "Volver arriba ↑",
+  },
+} as const;

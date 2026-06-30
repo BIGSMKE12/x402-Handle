@@ -28,12 +28,23 @@ import {
 } from "./http/responses";
 import {
   AEO_X402_REFRESH_PATH,
+  STELLAR_PLAYGROUND_PAY_PATH,
   matchCustomerRoute,
   matchProviderDetailRoute,
+  matchStellarProviderRoute,
   normalizePath,
   readonlyRoutes,
 } from "./http/routes";
 import { handleShowcaseRoute, showcaseRoutes } from "./showcase";
+import { getStellarHealth } from "./data/stellar-health";
+import { runPlaygroundPayment } from "./data/stellar-playground";
+import {
+  getProviderIntelligence,
+  getStatsOverview,
+  getStellarProviderById,
+  listStellarProviders,
+  recommendStellarProviders,
+} from "./data/stellar-providers";
 
 type RequestTimeoutController = {
   timeout(request: Request, seconds: number): void;
@@ -240,6 +251,41 @@ export const createBffHandler = (
     const path = normalizePath(url);
     const customerRoute = matchCustomerRoute(path);
     const providerRoute = matchProviderDetailRoute(path);
+    const stellarProviderRoute = matchStellarProviderRoute(path);
+
+    // ─── Día 4 — registry Stellar (independiente del data layer legacy) ───
+    if (request.method === "GET" && path === "/stellar/health") {
+      return json(await getStellarHealth());
+    }
+    if (request.method === "GET" && path === "/stellar/providers") {
+      return cachedJson(await listStellarProviders());
+    }
+    if (request.method === "GET" && stellarProviderRoute) {
+      if (stellarProviderRoute.kind === "detail") {
+        const provider = await getStellarProviderById(stellarProviderRoute.id);
+        return provider ? cachedJson(provider) : notFound(path);
+      }
+      const intelligence = await getProviderIntelligence(stellarProviderRoute.id);
+      return intelligence ? cachedJson(intelligence) : notFound(path);
+    }
+    if (request.method === "GET" && path === "/stellar/recommend") {
+      const category = url.searchParams.get("category") ?? undefined;
+      const maxPriceUsdcRaw = url.searchParams.get("maxPriceUsdc");
+      const maxPriceUsdc = maxPriceUsdcRaw ? Number(maxPriceUsdcRaw) : undefined;
+      return json(await recommendStellarProviders({ category, maxPriceUsdc }));
+    }
+    if (request.method === "GET" && path === "/stats/overview") {
+      return cachedJson(await getStatsOverview());
+    }
+    if (request.method === "POST" && path === STELLAR_PLAYGROUND_PAY_PATH) {
+      const body = await request.json().catch(() => null);
+      const providerId = typeof body?.providerId === "string" ? body.providerId : null;
+      if (!providerId) return badRequest("Body debe incluir { providerId: string }.");
+      // El pago real toma varios segundos (submit + confirmación en Horizon).
+      server?.timeout(request, 0);
+      const result = await runPlaygroundPayment(providerId);
+      return json(result, { status: result.ok ? 200 : 422 });
+    }
 
     if (request.method !== "GET") {
       if (request.method === "POST" && path === AEO_X402_REFRESH_PATH) {

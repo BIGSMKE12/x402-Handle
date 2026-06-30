@@ -26,16 +26,16 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://demo.flovia402.com";
-const siteName = "Flovia";
-const siteTitle = "Flovia — Turn x402 / MPP payments into decisions";
+const siteName = "HANDLE";
+const siteTitle = "HANDLE — Turn x402 / MPP payments into decisions";
 const siteDescription =
-  "Co-usage discovery for agent-driven API economies. Flovia turns on-chain x402 / MPP payments into product decisions.";
+  "Co-usage discovery for agent-driven API economies. HANDLE turns on-chain x402 / MPP payments into product decisions.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
     default: siteTitle,
-    template: "%s — Flovia",
+    template: "%s — HANDLE",
   },
   description: siteDescription,
   applicationName: siteName,

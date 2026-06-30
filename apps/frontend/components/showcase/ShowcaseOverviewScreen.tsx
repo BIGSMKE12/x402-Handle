@@ -42,7 +42,7 @@ export function ShowcaseOverviewScreen() {
             Connect MPP payment context to API provider usage.
           </h1>
           <p style={{ margin: "14px 0 0", maxWidth: 820, color: "var(--text-2)", lineHeight: 1.6, fontSize: 16 }}>
-            Stripe MPP and HitPay MPP still handle payment. Flovia wraps the paid route once and joins payment
+            Stripe MPP and HitPay MPP still handle payment. HANDLE wraps the paid route once and joins payment
             challenges, paid responses, endpoint usage, and retained demand signals.
           </p>
         </header>
@@ -80,7 +80,7 @@ export function ShowcaseOverviewScreen() {
                 <th>provider</th>
                 <th>rail</th>
                 <th>payment UX</th>
-                <th>Flovia join value</th>
+                <th>HANDLE join value</th>
               </tr>
             </thead>
             <tbody>

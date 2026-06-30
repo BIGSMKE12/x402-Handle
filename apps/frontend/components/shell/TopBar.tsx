@@ -23,7 +23,7 @@ type TopBarProps = {
 
 export function TopBar({
   providerId,
-  fallbackProviderName = "Flovia",
+  fallbackProviderName = "HANDLE",
   crumbs,
   onboarding,
 }: TopBarProps) {
@@ -57,7 +57,7 @@ export function TopBar({
       </div>
       <div className="spacer" />
       {onboarding ? <PageOnboarding content={onboarding} /> : null}
-      <img className="mobile-brand-logo" src="/logo.png" alt="Flovia" />
+      <img className="mobile-brand-logo" src="/logo.png" alt="HANDLE" />
       {/*
         グローバル UI 要素 (期間セレクタ / freshness インジケータ) は撤去済み。
         いずれもページ単独で意味を持つので、ページ内 Toolbar / Header に再配置する

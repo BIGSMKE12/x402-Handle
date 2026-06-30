@@ -42,7 +42,11 @@ afterAll(() => {
   for (const dir of tmpDirs) fs.rmSync(dir, { recursive: true, force: true });
 });
 
-describe("createX402DiscoveryStore", () => {
+// Skipped: exercises legacy multi-chain (EVM/Solana) x402 discovery fetch
+// behavior. The Stellar migration replaced `sources`' real fetchX402Discovery
+// with a no-op stub (see packages/sources/src/legacy-x402-stub.ts) since this
+// feature is out of scope for the 100%-Stellar hackathon build.
+describe.skip("createX402DiscoveryStore", () => {
   test("loadInitial reads slim snapshots and aggregates by host", () => {
     const dir = seedDir({
       cdp: [item("svc.test", "a", { bazaar: true })],

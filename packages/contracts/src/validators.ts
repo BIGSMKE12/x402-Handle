@@ -56,6 +56,9 @@ import {
 } from "./route-analytics";
 import type { AeoDiscovery } from "./aeo";
 import { AeoDiscoverySchema } from "./aeo";
+import type { ProviderIntelligence, StatsOverview, StellarProvider } from "./stellar-provider";
+import { ProviderIntelligenceSchema, StatsOverviewSchema, StellarProviderSchema } from "./stellar-provider";
+import { z } from "zod";
 import type {
   PhaseBCustomerProfileResponse,
   WalletUsageGraphResponse,
@@ -131,3 +134,15 @@ export const validateRouteAnalyticsSankeyResponse = (
 
 export const validateAeoDiscoveryResponse = (value: unknown): AeoDiscovery =>
   AeoDiscoverySchema.parse(value);
+
+export const validateStellarProviderListResponse = (value: unknown): StellarProvider[] =>
+  z.array(StellarProviderSchema).parse(value);
+
+export const validateStellarProviderResponse = (value: unknown): StellarProvider =>
+  StellarProviderSchema.parse(value);
+
+export const validateProviderIntelligenceResponse = (value: unknown): ProviderIntelligence =>
+  ProviderIntelligenceSchema.parse(value);
+
+export const validateStatsOverviewResponse = (value: unknown): StatsOverview =>
+  StatsOverviewSchema.parse(value);

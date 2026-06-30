@@ -27,12 +27,12 @@ describe("MobileDesktopGate", () => {
   test("renders desktop-only guidance and landing page CTA on mobile", () => {
     const html = renderToStaticMarkup(<MobileDesktopGate landingUrl="https://example.com" />);
 
-    expect(html).toContain("Flovia is built for desktop analytics");
+    expect(html).toContain("HANDLE is built for desktop analytics");
     expect(html).toContain("/logo.png");
     expect(html).not.toContain("Desktop workspace");
     expect(html).not.toContain("Copy desktop link");
     expect(html).not.toContain("Tip:");
-    expect(html).toContain("View Flovia Overview");
+    expect(html).toContain("View HANDLE Overview");
     expect(html).toContain("↗");
     expect(html).toContain("https://example.com");
   });

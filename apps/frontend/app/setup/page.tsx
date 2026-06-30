@@ -32,7 +32,7 @@ export default async function SetupPage() {
               Connect your <span style={{ color: "var(--teal)" }}>pay_to</span> address
             </h1>
             <p style={{ color: "var(--text-2)", fontSize: 15, margin: 0, maxWidth: 600 }}>
-              Flovia reads x402 facilitator data to map every wallet calling your API — and what
+              HANDLE reads x402 facilitator data to map every wallet calling your API — and what
               they call alongside it. No SDK, no auth.
             </p>
           </div>

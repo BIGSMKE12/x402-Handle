@@ -8,7 +8,7 @@ export default async function HitPayMppShowcasePage() {
   return (
     <>
       <TopBar
-        fallbackProviderName="Flovia"
+        fallbackProviderName="HANDLE"
         crumbs={[{ label: "MPP Showcase", href: "/showcase" }, { label: "HitPay MPP" }]}
         dataMode={dataMode}
       />

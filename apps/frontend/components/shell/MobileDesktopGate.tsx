@@ -14,17 +14,17 @@ export function MobileDesktopGate({ landingUrl }: MobileDesktopGateProps) {
     <main className="mobile-desktop-gate" aria-labelledby="mobile-desktop-gate-title">
       <section className="mobile-desktop-gate-card">
         <div className="mobile-desktop-gate-brand">
-          <img className="mobile-desktop-gate-logo" src="/logo.png" alt="Flovia" />
-          <span>Flovia</span>
+          <img className="mobile-desktop-gate-logo" src="/logo.png" alt="HANDLE" />
+          <span>HANDLE</span>
         </div>
-        <h1 id="mobile-desktop-gate-title">Flovia is built for desktop analytics</h1>
+        <h1 id="mobile-desktop-gate-title">HANDLE is built for desktop analytics</h1>
         <p className="mobile-desktop-gate-copy">
-          Flovia uses dense payment tables, provider-level analysis, and network views that
-          need a larger screen. Open Flovia on desktop for the full dashboard experience.
+          HANDLE uses dense payment tables, provider-level analysis, and network views that
+          need a larger screen. Open HANDLE on desktop for the full dashboard experience.
         </p>
         <div className="mobile-desktop-gate-actions">
           <a className="btn primary" href={landingUrl}>
-            View Flovia Overview <span aria-hidden="true">↗</span>
+            View HANDLE Overview <span aria-hidden="true">↗</span>
           </a>
         </div>
       </section>

@@ -8,18 +8,18 @@ export default async function ShowcasePage() {
   return (
     <>
       <TopBar
-        fallbackProviderName="Flovia"
+        fallbackProviderName="HANDLE"
         crumbs={[{ label: "MPP Showcase" }]}
         dataMode={dataMode}
         onboarding={{
           id: "mpp-showcase",
           title: "Show paid API analytics",
           description:
-            "Compare Stripe MPP and HitPay MPP flows with one Flovia wrapper around each paid API endpoint.",
+            "Compare Stripe MPP and HitPay MPP flows with one HANDLE wrapper around each paid API endpoint.",
           metrics: [
             {
               label: "One wrapper",
-              description: "Route-level Flovia tracking surrounds each MPP-protected endpoint.",
+              description: "Route-level HANDLE tracking surrounds each MPP-protected endpoint.",
               icon: "spark",
             },
             {

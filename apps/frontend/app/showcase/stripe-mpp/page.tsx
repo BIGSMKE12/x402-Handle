@@ -8,7 +8,7 @@ export default async function StripeMppShowcasePage() {
   return (
     <>
       <TopBar
-        fallbackProviderName="Flovia"
+        fallbackProviderName="HANDLE"
         crumbs={[{ label: "MPP Showcase", href: "/showcase" }, { label: "Stripe MPP" }]}
         dataMode={dataMode}
       />

@@ -64,7 +64,7 @@ const providerConfig = {
       "MPP challenge issued",
       "Tempo token payment completed",
       "paid API response",
-      "Flovia joined event",
+      "HANDLE joined event",
     ],
     captured: ["provider=stripe", "rail=mpp", "network=tempo", "paymentIntentId", "recipient", "endpoint status latency"],
     copy: {
@@ -72,7 +72,7 @@ const providerConfig = {
         "Call the endpoint to inspect the MPP 402 challenge, or pay from the server-side MPPX demo wallet with one button.",
       challenge:
         "402 challenge issued. Click Pay with MPPX wallet to pay and retry with a Payment credential from the BFF demo wallet.",
-      paid: "MPP credential accepted. Paid API response delivered and joined by Flovia.",
+      paid: "MPP credential accepted. Paid API response delivered and joined by HANDLE.",
     },
   },
   hitpay: {
@@ -115,7 +115,7 @@ const providerConfig = {
       "checkout URL generated",
       "payment completed",
       "paid API response",
-      "Flovia joined event",
+      "HANDLE joined event",
     ],
     captured: ["provider=hitpay", "rail=mpp", "checkoutUrl", "chargeId", "amount=1.00 sgd", "endpoint status latency"],
     copy: {
@@ -123,7 +123,7 @@ const providerConfig = {
         "This PoC does not take a real payment here. First call returns a 402 challenge; then complete the sandbox checkout.",
       challenge:
         "402 challenge issued with checkout URL. Open the HitPay sandbox checkout, pay, then click I paid. Continue.",
-      paid: "Demo payment completion accepted. Paid API response delivered and joined by Flovia.",
+      paid: "Demo payment completion accepted. Paid API response delivered and joined by HANDLE.",
     },
   },
   solana: {
@@ -191,7 +191,7 @@ app.get(
       "Solana SPL transfer signed",
       "transfer confirmed on-chain",
       "paid API response",
-      "Flovia joined event",
+      "HANDLE joined event",
     ],
     captured: [
       "provider=solana",
@@ -210,7 +210,7 @@ app.get(
         "Call the endpoint to inspect the Solana MPP 402 challenge, or pay from the server-side payer wallet (devnet USDC). {network} is the configured cluster.",
       challenge:
         "402 challenge issued. Click Pay with Solana wallet to sign and submit an SPL transfer on {network}, then retry with the MPP credential.",
-      paid: "Solana MPP credential accepted. Paid API response delivered and joined by Flovia.",
+      paid: "Solana MPP credential accepted. Paid API response delivered and joined by HANDLE.",
     },
   },
 } as const;
@@ -474,7 +474,7 @@ export function ShowcaseProviderScreen({ provider }: ShowcaseProviderScreenProps
       <div className="showcase-page-pad">
         <header style={{ marginBottom: 24 }}>
           <div>
-            <div className="eyebrow" style={{ marginBottom: 8 }}>Integration → Live → Flovia result → Simulate</div>
+            <div className="eyebrow" style={{ marginBottom: 8 }}>Integration → Live → HANDLE result → Simulate</div>
             <h1 className="display" style={{ margin: 0, fontSize: 34, letterSpacing: "-0.03em" }}>{config.title}</h1>
           </div>
         </header>
@@ -482,7 +482,7 @@ export function ShowcaseProviderScreen({ provider }: ShowcaseProviderScreenProps
         <Card eyebrow="Integration">
           <div className="showcase-code-compare" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
             <CodeCompareColumn label={config.providerOnlyLabel} tone="muted" code={config.providerOnlySnippet} />
-            <CodeCompareColumn label="With Flovia SDK" tone="accent" accent={config.accent} accentDim={config.accentDim} code={config.floviaSnippet} />
+            <CodeCompareColumn label="With HANDLE SDK" tone="accent" accent={config.accent} accentDim={config.accentDim} code={config.floviaSnippet} />
           </div>
         </Card>
 
@@ -530,7 +530,7 @@ export function ShowcaseProviderScreen({ provider }: ShowcaseProviderScreenProps
             {state === "paid" && result ? (
               <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px dashed var(--line-strong)" }}>
                 <div className="eyebrow" style={{ marginBottom: 12, color: config.accent }}>
-                  Flovia result
+                  HANDLE result
                 </div>
                 <ProviderVsFloviaPanel
                   provider={provider}
@@ -547,9 +547,9 @@ export function ShowcaseProviderScreen({ provider }: ShowcaseProviderScreenProps
         </div>
 
         <section className="card" style={{ marginTop: 24, padding: 24 }}>
-          <div className="eyebrow" style={{ marginBottom: 16 }}>What Flovia joins</div>
+          <div className="eyebrow" style={{ marginBottom: 16 }}>What HANDLE joins</div>
           <h2 style={{ margin: "0 0 20px", fontSize: 18, fontWeight: 600 }}>
-            Payment dashboards know who paid. API logs know what was used. Flovia connects them.
+            Payment dashboards know who paid. API logs know what was used. HANDLE connects them.
           </h2>
           <div
             className="showcase-join-flow"
@@ -711,7 +711,7 @@ function CheatCodeButton({ provider, onClick }: { provider: ProviderKey; onClick
     <button
       type="button"
       onClick={onClick}
-      title="Show the successful Flovia result when payment cannot be completed."
+      title="Show the successful HANDLE result when payment cannot be completed."
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -897,7 +897,7 @@ function SimulatedFlowDiagram({
         <FlowStepCard
           index={5}
           accent={accent}
-          title="Flovia joins event"
+          title="HANDLE joins event"
           lines={["payment context", "endpoint usage", "workflow signal"]}
           emphasized
         />
@@ -924,7 +924,7 @@ function SimulatedFlowDiagram({
           accent={accent}
         />
         <LaneCard
-          label="Flovia lane"
+          label="HANDLE lane"
           title="Joined analytics event"
           lines={["payment id ↔ request id", "rail ↔ endpoint", "paid response ↔ workflow", "retained demand signal"]}
           accent={accent}
@@ -1462,7 +1462,7 @@ function ProviderVsFloviaPanel({
           ]}
         />
         <ComparisonColumn
-          eyebrow="Flovia knows"
+          eyebrow="HANDLE knows"
           title="Joined payment + API usage"
           accent={accent}
           highlighted
@@ -1478,7 +1478,7 @@ function ProviderVsFloviaPanel({
           background: config.accentDim,
         }}
       >
-        <div className="eyebrow" style={{ marginBottom: 6, color: accent }}>Joined by Flovia</div>
+        <div className="eyebrow" style={{ marginBottom: 6, color: accent }}>Joined by HANDLE</div>
         <div className="showcase-join-equation" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr)", gap: 10, alignItems: "center" }}>
           <JoinPill label="payment" value={joinedPaymentId} />
           <span className="mono showcase-equation-symbol" style={{ color: "var(--text-3)", fontSize: 18 }}>×</span>
@@ -1578,7 +1578,7 @@ function JoinCard({ accent }: { accent: string }) {
         boxShadow: `inset 0 0 0 1px ${accent}, var(--shadow-2)`,
       }}
     >
-      <div className="eyebrow" style={{ marginBottom: 8, color: accent }}>Flovia join layer</div>
+      <div className="eyebrow" style={{ marginBottom: 8, color: accent }}>HANDLE join layer</div>
       <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Joined paid API event</h3>
       <div style={{ display: "grid", gap: 8, marginTop: 14 }}>
         <JoinLine left="payment id" right="request id" />

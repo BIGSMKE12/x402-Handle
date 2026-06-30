@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
 export const runtime = "nodejs";
-export const alt = "Flovia — Turn x402 / MPP payments into decisions";
+export const alt = "HANDLE — Turn x402 / MPP payments into decisions";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -69,7 +69,7 @@ export default async function Image() {
                 color: BRAND.text1,
               }}
             >
-              Flovia
+              HANDLE
             </div>
             <div
               style={{

@@ -60,7 +60,10 @@ const post = (token?: string, header: "authorization" | "x-refresh-token" = "aut
     headers: token ? { [header]: header === "authorization" ? `Bearer ${token}` : token } : {},
   });
 
-describe("GET /aeo/x402", () => {
+// Skipped: aggregateAeoDiscovery es un stub no-op desde la migración a Stellar
+// (packages/sources/src/legacy-x402-stub.ts) — discovery x402 multi-chain
+// (EVM/Solana) está fuera de scope para el hackathon 100%-Stellar.
+describe.skip("GET /aeo/x402", () => {
   test("returns the aggregate for a matched service even while analytics is loading", async () => {
     const res = await makeHandler()(new Request("http://bff/aeo/x402?service=svc.test"));
     expect(res.status).toBe(200);

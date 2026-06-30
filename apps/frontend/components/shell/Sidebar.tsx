@@ -108,7 +108,7 @@ export function Sidebar({ activeProviderId, activeRoute, dataMode, className }: 
           priority
         />
         <div className="brand-name">
-          <span>Flovia</span>
+          <span>HANDLE</span>
           <em>Commercial Analytics</em>
           <span className="brand-tags" aria-label="Supported protocols">
             <span className="brand-tag">x402</span>

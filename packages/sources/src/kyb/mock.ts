@@ -1,6 +1,6 @@
 // MOCK_KYB: Reemplazar en mes 1-3 por integración real con SEP-12 anchor.
 
-type KybRecord = {
+export type KybRecord = {
   providerId: string;
   status: "verified" | "pending" | "none";
   kybProvider?: string;
@@ -8,7 +8,43 @@ type KybRecord = {
   verifiedAt?: string;
 };
 
-const MOCKS: Record<string, KybRecord> = {};
+// Ticket 4.7 — seed demo: los 5 providers sembrados en testnet
+// (apps/cli/scripts/seed-providers.ts), 3 verified / 1 pending / 1 none.
+const REGISTRY_CONTRACT_ID = "CC4M6C3UI2Y5Z2FNPTT4UCSXYWSJH2NBILEMHQYJLWJU5IHZ3GNT7EPX";
+const providerKey = (providerId: number) => `${REGISTRY_CONTRACT_ID}/${providerId}`;
+
+const MOCKS: Record<string, KybRecord> = {
+  [providerKey(1)]: {
+    providerId: providerKey(1),
+    status: "verified",
+    kybProvider: "mock-anchor",
+    kybTier: 2,
+    verifiedAt: "2026-05-01T00:00:00.000Z",
+  },
+  [providerKey(2)]: {
+    providerId: providerKey(2),
+    status: "verified",
+    kybProvider: "mock-anchor",
+    kybTier: 1,
+    verifiedAt: "2026-05-10T00:00:00.000Z",
+  },
+  [providerKey(3)]: {
+    providerId: providerKey(3),
+    status: "verified",
+    kybProvider: "mock-anchor",
+    kybTier: 3,
+    verifiedAt: "2026-04-20T00:00:00.000Z",
+  },
+  [providerKey(4)]: {
+    providerId: providerKey(4),
+    status: "pending",
+    kybProvider: "mock-anchor",
+  },
+  [providerKey(5)]: {
+    providerId: providerKey(5),
+    status: "none",
+  },
+};
 
 export async function getKybStatus(providerId: string): Promise<KybRecord> {
   console.warn(`[MOCK_KYB] fetching ${providerId}`);
