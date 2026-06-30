@@ -50,3 +50,4 @@ packages/*/node_modules/
 /.agents
 docker-data/
 .vercel
+accounts.local.md
