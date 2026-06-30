@@ -1,0 +1,25 @@
+{
+  "name": "@flovia/x402-stellar",
+  "version": "0.1.0",
+  "description": "HTTP 402 middleware for Stellar — agentic payments in USDC",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./server": "./src/server.ts",
+    "./verify": "./src/verify.ts"
+  },
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@stellar/stellar-sdk": "^12.3.0",
+    "zod": "^3.23.0"
+  },
+  "peerDependencies": {
+    "hono": "^4.0.0"
+  },
+  "license": "MIT"
+}
