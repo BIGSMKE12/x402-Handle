@@ -1,6 +1,0 @@
-{
-  "installCommand": "cd ../.. && bun install",
-  "buildCommand": "cd ../.. && bun run --filter=frontend build",
-  "outputDirectory": ".next",
-  "framework": "nextjs"
-}

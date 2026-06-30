@@ -1,5 +1,6 @@
 {
-  "git": {
-    "deploymentEnabled": false
-  }
+  "installCommand": "bun install",
+  "buildCommand": "bun run --filter=frontend build",
+  "outputDirectory": "apps/frontend/.next",
+  "framework": "nextjs"
 }
