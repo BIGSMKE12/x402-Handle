@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { MachinePaymentRoutesScreen } from "@/components/machine-payment-routes/MachinePaymentRoutesScreen";
 import { TopBar } from "@/components/shell/TopBar";
 import { getRouteAnalyticsSummary } from "@/lib/api/client";

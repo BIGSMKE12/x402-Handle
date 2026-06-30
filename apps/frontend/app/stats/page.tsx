@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { AppShell } from "@/components/shell/AppShell";
 import { SdkPreviewNoticeBar } from "@/components/shell/SdkPreviewNoticeBar";
 import { getServerDashboardMode } from "@/lib/data-mode";

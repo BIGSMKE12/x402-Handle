@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { AppShell } from "@/components/shell/AppShell";
 import { MobileMenuButton } from "@/components/shell/MobileMenuButton";
 import { SdkPreviewNoticeBar } from "@/components/shell/SdkPreviewNoticeBar";

@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { getStatsOverview, getStellarHealth } from "@/lib/api/client";
 import { resolveRootRedirectPath } from "./root-redirect";
 import { LandingClient } from "./LandingClient";

@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import { TopBar } from "@/components/shell/TopBar";
 import { CustomersBrowser } from "@/components/customers/CustomersBrowser";

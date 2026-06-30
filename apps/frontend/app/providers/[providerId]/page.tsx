@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import { AddressChip } from "@/components/stellar/AddressChip";
 import { LayerTabs } from "@/components/stellar/LayerTabs";

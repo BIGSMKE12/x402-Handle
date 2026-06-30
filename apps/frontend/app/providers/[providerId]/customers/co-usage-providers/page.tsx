@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { normalizePaymentRecipientAddress } from "contracts";
 import { TopBar } from "@/components/shell/TopBar";
 import { CoUsageProvidersView } from "@/components/customers/CoUsageProvidersView";

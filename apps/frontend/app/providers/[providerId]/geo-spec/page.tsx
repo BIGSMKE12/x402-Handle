@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { GeoSpecScreen } from "@/components/geo-spec/GeoSpecScreen";
 import { getAeoX402Discovery, getProviders } from "@/lib/api/client";
 import { findProviderByRouteId } from "@/lib/providers";
