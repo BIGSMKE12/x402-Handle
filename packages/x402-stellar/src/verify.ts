@@ -71,10 +71,7 @@ export async function verifyUsdcPayment(opts: VerifyOpts): Promise<VerifyResult>
   // Operations
   let opsPage: any;
   try {
-    opsPage = await server.transactions()
-      .transaction(opts.txHash)
-      .operations()
-      .call();
+    opsPage = await server.operations().forTransaction(opts.txHash).call();
   } catch (err: any) {
     return { ok: false, reason: "horizon_error", detail: String(err?.message ?? err) };
   }
