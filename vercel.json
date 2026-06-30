@@ -1,6 +1,6 @@
 {
   "installCommand": "bun install",
   "buildCommand": "bun run --filter=frontend build",
-  "outputDirectory": "apps/frontend/.next",
+  "outputDirectory": ".next",
   "framework": "nextjs"
 }
