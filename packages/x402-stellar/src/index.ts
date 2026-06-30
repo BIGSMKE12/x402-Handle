@@ -3,6 +3,8 @@ export { x402Stellar } from "./server";
 export { x402Pay } from "./client";
 export { verifyUsdcPayment } from "./verify";
 export { createReplayCache, defaultReplayCache } from "./replay-cache";
+export { logPaymentOnChain } from "./onchain-log";
+export type { OnChainLogOpts } from "./onchain-log";
 export {
   X402_VERSION,
   X402ChallengeSchema,

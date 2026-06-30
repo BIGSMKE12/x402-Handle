@@ -9,11 +9,13 @@
  */
 
 import { Hono } from "hono";
-import { x402Stellar } from "@flovia/x402-stellar";
+import { x402Stellar, logPaymentOnChain } from "@flovia/x402-stellar";
 
 const DESTINATION = process.env.DEMO_PROVIDER_PUBLIC;
 const NETWORK = (process.env.STELLAR_NETWORK ?? "testnet") as "testnet" | "public";
 const PORT = Number(process.env.DEMO_PROVIDER_PORT ?? 5402);
+const REGISTRY_CONTRACT_ID = process.env.REGISTRY_CONTRACT_ID;
+const PROVIDER_ID = 1n; // FX Rates Oracle, sembrado en ticket 3.3
 
 if (!DESTINATION) {
   console.error("Missing DEMO_PROVIDER_PUBLIC in env");
@@ -34,6 +36,24 @@ app.use(
     network: NETWORK,
     onPaymentVerified: async ({ txHash, payer, amount, memo }) => {
       console.log(`[x402] payment verified — tx:${txHash.slice(0, 10)}... payer:${payer.slice(0, 8)}... amount:${amount} USDC memo:${memo}`);
+      // Ticket 3.6 — espejar el pago en el registry on-chain (opcional, best-effort)
+      if (REGISTRY_CONTRACT_ID && DESTINATION) {
+        try {
+          await logPaymentOnChain(
+            {
+              contractId: REGISTRY_CONTRACT_ID,
+              providerId: PROVIDER_ID,
+              callerSecret: process.env.DEMO_PROVIDER_SECRET!,
+              network: NETWORK,
+              sorobanUrl: process.env.SOROBAN_RPC_URL,
+            },
+            { txHash, payer, amount }
+          );
+          console.log(`[x402] payment logged on-chain — provider:${PROVIDER_ID} tx:${txHash.slice(0, 10)}...`);
+        } catch (err) {
+          console.error("[x402] log_payment on-chain failed:", err);
+        }
+      }
     },
   })
 );
