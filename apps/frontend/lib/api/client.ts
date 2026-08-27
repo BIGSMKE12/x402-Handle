@@ -206,6 +206,48 @@ export async function getStellarProviderIntelligence(
   return validateProviderIntelligenceResponse(await response.json());
 }
 
+export type StellarHandle = {
+  handle: string;
+  providerId: string;
+  owner: string;
+};
+
+export async function resolveHandle(handle: string): Promise<StellarHandle | null> {
+  const slug = handle.trim().replace(/^handle:/, "");
+  if (!slug) return null;
+  const response = await fetch(`${bffBaseUrl()}/stellar/handles/${encodeURIComponent(slug)}`, {
+    cache: "no-store",
+    headers: { accept: "application/json" },
+    signal: AbortSignal.timeout(SNAPSHOT_FETCH_TIMEOUT_MS),
+  });
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error(
+      `Data request failed: ${response.status} ${response.statusText} (/stellar/handles/${slug})`,
+    );
+  }
+  return (await response.json()) as StellarHandle;
+}
+
+export async function reverseResolveHandle(address: string): Promise<string | null> {
+  const response = await fetch(
+    `${bffBaseUrl()}/stellar/handles/reverse/${encodeURIComponent(address)}`,
+    {
+      cache: "no-store",
+      headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(SNAPSHOT_FETCH_TIMEOUT_MS),
+    },
+  );
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error(
+      `Data request failed: ${response.status} ${response.statusText} (/stellar/handles/reverse/${address})`,
+    );
+  }
+  const data = (await response.json()) as { handle: string };
+  return data.handle ?? null;
+}
+
 export async function getStellarHealth(): Promise<StellarHealth> {
   return bffFetch<StellarHealth>("/stellar/health");
 }
