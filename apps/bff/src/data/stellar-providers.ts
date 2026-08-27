@@ -63,6 +63,35 @@ export async function getStellarProviderById(id: string): Promise<StellarProvide
   return rows[0] ? mapProviderRow(rows[0]) : null;
 }
 
+/**
+ * HANDLE names (human-readable provider aliases).
+ * Resolves a unique slug to a StellarProvider.
+ * The `handles` table is kept in sync with the on-chain names contract by the indexer.
+ */
+export async function resolveHandle(slug: string): Promise<StellarProvider | null> {
+  const rows = await Bun.sql<Array<{ provider_id: string }>>`
+    SELECT provider_id
+    FROM handles
+    WHERE slug = ${slug} AND active = true
+    LIMIT 1
+  `;
+  if (!rows[0]) return null;
+  return getStellarProviderById(rows[0].provider_id);
+}
+
+/**
+ * Reverse lookup: returns the HANDLE slug owned by the given account, if any.
+ */
+export async function getHandleByOwner(ownerAddress: string): Promise<string | null> {
+  const rows = await Bun.sql<Array<{ slug: string }>>`
+    SELECT slug
+    FROM handles
+    WHERE owner_account = ${ownerAddress} AND active = true
+    LIMIT 1
+  `;
+  return rows[0]?.slug ?? null;
+}
+
 type FinancialStats = {
   volume30dUsdc: number;
   paymentCount30d: number;
