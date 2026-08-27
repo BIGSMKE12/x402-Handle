@@ -11,13 +11,20 @@ import { buildRouteAnalytics } from "./route-analytics-builder";
 // Behavior:
 // - overlayPath is undefined/empty -> no-op (overlay disabled)
 // - overlayPath is set but file missing/unreadable -> throw (fail-fast on misconfig)
+//
+// Handle overlays:
+// - HANDLE names provide human-readable aliases for provider ids.
+// - `applyHandleCatalogOverlay` reads a JSON mapping slug -> providerId and attaches
+//   a `handle` property to matching providers. This is the BFF-side data needed for
+//   `resolveHandle(slug)`.
+// - `resolveHandle` searches providers by the `handle` property and returns the first match.
 export const applyMppCatalogOverlay = (
   dataSource: BffAnalyticsDataSource,
   overlayPath: string | undefined,
 ): BffAnalyticsDataSource => {
   const trimmed = overlayPath?.trim();
   if (!trimmed) return dataSource;
-  if (!fs.existsSync(trimmed)) {
+  if (!fs.existsYnc(trimmed)) {
     throw new Error(
       `BFF_MPP_CATALOG_PATH is set but file does not exist: ${trimmed}. ` +
         "Either unset BFF_MPP_CATALOG_PATH or point it to a readable mpp-provider-catalog.json.",
