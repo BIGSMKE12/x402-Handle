@@ -45,6 +45,7 @@ export function aggregateProviderRouteId(serviceId: string): string {
 
 type ProviderRouteLike = {
   providerId: string;
+  handle?: string;
   name: string;
   title?: string;
   description?: string;
@@ -91,10 +92,15 @@ function providerRouteAliases(provider: ProviderRouteLike): Set<string> {
   const aliases = new Set<string>([provider.providerId.toLowerCase()]);
   const identityCandidates = [
     provider.providerId,
+    provider.handle,
     provider.name,
     provider.serviceId,
     provider.serviceName,
   ].filter((value): value is string => typeof value === "string" && value.length > 0);
+  if (provider.handle) {
+    aliases.add(provider.handle.toLowerCase());
+    aliases.add(`handle:${provider.handle.toLowerCase()}`);
+  }
 
   // `static-${slugify(serviceId)}` is the route id used when a static
   // capability is the only source for a provider. The live BFF row may shadow
